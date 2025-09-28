@@ -1,0 +1,85 @@
+I have a social media platform project called SocializeIn built with React, Node.js, Express, and currently integrating Firebase instead of MongoDB. The project is already connected with an LLM API, so it can be used for AI-powered features. I want you to:
+
+🔹 Enhance existing features
+
+Improve UI standards, alignment, accessibility, and responsiveness using Tailwind CSS best practices.
+
+Verify that authentication, posts, stories, notifications, messaging, profiles, settings, and privacy features work seamlessly after Firebase integration.
+
+Ensure Firebase Auth, Firestore, and Firebase Storage are used consistently for authentication, database reads/writes, and file storage.
+
+Maintain real-time interactions (messaging, presence, notifications) using Socket.IO and Firestore realtime listeners.
+
+Fix visual layout issues, unify spacing/typography, and add loading + error states for smoother UX.
+
+🔹 New Features (Lightweight but Unique)
+
+Voice Notes in Chat — Allow users to record and send short voice messages. Store files in Firebase Storage and reference them in Firestore. Provide UI controls for record, playback, delete, and upload progress.
+
+Post Reactions — Multiple emoji reactions (❤️ 😂 😮 😢 👍) with per-emoji counts and toggle behavior per user. Store in Firestore.
+
+Achievement Badges — Badge system for milestones (e.g., first post, 100 likes, 7-day streak). Assign badges via backend/cloud functions and display them on user profiles.
+
+🔹 Landing Page Integration
+
+Add a dedicated landing page that users see before signup/login.
+
+The landing page should include:
+
+Signup/Login options (redirects into Firebase Auth flow)
+
+App branding / name (SocializeIn)
+
+Short description of what the platform does
+
+Feature highlights (posts, chat, reactions, badges, AI-powered suggestions)
+
+A clear call-to-action (e.g., “Join SocializeIn Now”)
+
+A clean, modern, responsive design built with Tailwind CSS
+
+🔹 Leverage the LLM API (Optional AI Features)
+
+Suggest AI-powered captions or summaries for long posts.
+
+Provide smart suggested replies in chat (toggle per user).
+
+Use AI for personalized feed recommendations or lightweight discovery hints.
+
+🔹 Validation & Quality Checks
+
+Verify all existing and new features integrate smoothly.
+
+Ensure Firestore schema is consistent and optimized.
+
+Confirm API endpoints, Socket.IO flows, and Firebase rules are correct.
+
+Add input validation, error handling, and rate-limiting where needed.
+
+Keep code well-documented, production-ready, beginner-friendly with clear comments.
+
+🔹 Docs & Deliverables
+
+Update README with Firebase setup steps (Auth, Firestore rules, Storage), environment variables, and how to run frontend and backend locally.
+
+Add a CHANGELOG summarizing changes and a QA checklist for feature testing.
+
+Include screenshots or short demo GIFs for landing page, reactions, badges, and voice notes UI.
+
+🔹 Acceptance Criteria
+
+App runs locally with npm run dev for frontend and backend after following README.
+
+Authentication, posts, stories, messaging, notifications work end-to-end.
+
+Landing page displays properly before login/signup.
+
+Voice notes upload/playback works.
+
+Reactions update atomically.
+
+Badges appear on profiles correctly.
+
+AI features work as optional enhancements without breaking core flows.
+
+Deliver the updated project with clear commit history, comments, and updated README. Avoid breaking existing user data; prefer non-destructive migrations with steps included.
