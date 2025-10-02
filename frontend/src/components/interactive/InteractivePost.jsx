@@ -6,7 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotifications } from '../../context/NotificationContext';
 import ProfilePicture from '../profile/ProfilePicture';
 
-const InteractivePost = ({ post, onPostUpdate }) => {
+const InteractivePost = React.memo(({ post, onPostUpdate }) => {
   const { user } = useAuth();
   const { socket } = useNotifications();
   const [isLiked, setIsLiked] = useState(false);
@@ -360,6 +360,6 @@ const InteractivePost = ({ post, onPostUpdate }) => {
       )}
     </div>
   );
-};
+});
 
 export default InteractivePost;

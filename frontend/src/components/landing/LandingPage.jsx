@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Heart, 
   MessageCircle, 
@@ -36,10 +36,21 @@ import {
   Target,
   TrendingUp
 } from 'lucide-react';
+import AuthSidebar from '../auth/AuthSidebar';
+import { signInWithGoogle } from '../../services/firebase/auth';
 
 const LandingPage = () => {
   const [currentFeature, setCurrentFeature] = useState(0);
   const [isVisible, setIsVisible] = useState({});
+  const [authSidebarOpen, setAuthSidebarOpen] = useState(false);
+  const [authMode, setAuthMode] = useState('login');
+  
+  const navigate = useNavigate();
+
+  const openAuthSidebar = (mode) => {
+    setAuthMode(mode);
+    setAuthSidebarOpen(true);
+  };
 
   // Enhanced features showcasing current app capabilities
   const features = [
@@ -137,11 +148,11 @@ const LandingPage = () => {
       <header className="bg-white/90 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4">
               <img 
                 src="/logo.png" 
                 alt="Sociogram Logo" 
-                className="w-[110px] h-[95px] rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className="w-20 h-16 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 object-contain border-2 border-violet-200 hover:border-violet-300"
               />
               <div>
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent leading-tight">
@@ -151,20 +162,20 @@ const LandingPage = () => {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Link 
-                to="/login"
+              <button 
+                onClick={() => openAuthSidebar('login')}
                 className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium transition-colors relative group"
               >
                 Sign In
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300 group-hover:w-full"></span>
-              </Link>
-              <Link 
-                to="/register"
+              </button>
+              <button 
+                onClick={() => openAuthSidebar('register')}
                 className="px-6 py-2.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center space-x-2"
               >
                 <Rocket className="w-4 h-4" />
                 <span>Get Started</span>
-              </Link>
+              </button>
             </div>
           </div>
         </div>
@@ -215,15 +226,15 @@ const LandingPage = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link 
-                to="/register"
+              <button 
+                onClick={() => openAuthSidebar('register')}
                 className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center group relative overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <Rocket className="w-5 h-5 mr-2 group-hover:rotate-12 transition-transform duration-300" />
                 Join Sociogram Now
                 <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
-              </Link>
+              </button>
               <button className="w-full sm:w-auto px-8 py-4 bg-white/80 backdrop-blur-sm border-2 border-gray-200 text-gray-700 rounded-xl hover:border-purple-300 hover:bg-white/90 transition-all duration-300 font-semibold text-lg flex items-center justify-center group shadow-lg hover:shadow-xl">
                 <Play className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300 text-purple-500" />
                 Watch Demo
@@ -490,21 +501,21 @@ const LandingPage = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Link 
-                to="/register"
+              <button 
+                onClick={() => openAuthSidebar('register')}
                 className="w-full sm:w-auto px-10 py-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center group"
               >
                 <UserPlus className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
                 Create Your Account
-                <Sparkles className="w-5 h-5 ml-2 group-hover:rotate-12 transition-transform duration-300" />
-              </Link>
-              <Link 
-                to="/login"
+                <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
+              </button>
+              <button 
+                onClick={() => openAuthSidebar('login')}
                 className="w-full sm:w-auto px-10 py-4 bg-white border-2 border-gray-300 text-gray-700 rounded-xl hover:border-purple-400 hover:bg-purple-50 hover:text-purple-700 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl flex items-center justify-center group"
               >
                 <Eye className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" />
                 Sign In Instead
-              </Link>
+              </button>
             </div>
 
             {/* Trust Indicators */}
@@ -546,7 +557,7 @@ const LandingPage = () => {
               <img 
                 src="/logo.png" 
                 alt="Sociogram Logo" 
-                className="w-12 h-12 rounded-xl shadow-lg"
+                className="w-16 h-12 rounded-xl shadow-lg object-contain border-2 border-violet-300"
               />
               <div>
                 <h4 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -597,6 +608,13 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Auth Sidebar */}
+      <AuthSidebar 
+        isOpen={authSidebarOpen} 
+        onClose={() => setAuthSidebarOpen(false)} 
+        initialMode={authMode}
+      />
     </div>
   );
 };

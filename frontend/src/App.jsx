@@ -6,8 +6,6 @@ import { NotificationProvider } from './context/NotificationContext';
 import { SocketProvider } from './context/SocketContext';
 import Layout from './components/layout/Layout';
 import LandingPage from './components/landing/LandingPage';
-import Login from './components/auth/Login';
-import Register from './components/auth/Register';
 import Feed from './components/feed/Feed';
 import CreatePost from './components/create/CreatePost';
 import Profile from './components/profile/Profile';
@@ -22,7 +20,7 @@ import Followers from './components/follow/Followers';
 import FollowDebugger from './components/debug/FollowDebugger';
 import FrontendBackendTest from './components/test/FrontendBackendTest';
 import SimpleTest from './components/test/SimpleTest';
-import BlogAssistant from './components/blog/BlogAssistant';
+import FirebaseTest from './components/firebase/FirebaseTest';
 import Settings from './components/settings/Settings';
 
 const ProtectedRoute = ({ children }) => {
@@ -30,13 +28,19 @@ const ProtectedRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-instagram-blue"></div>
+      <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+        <img 
+          src="/logo.png" 
+          alt="Sociogram Logo" 
+          className="w-20 h-16 rounded-2xl shadow-lg mb-4 object-contain border-2 border-violet-200"
+        />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        <p className="text-gray-600 mt-4 font-medium">Loading Sociogram...</p>
       </div>
     );
   }
   
-  return user ? children : <Navigate to="/login" />;
+  return user ? children : <Navigate to="/" />;
 };
 
 const PublicRoute = ({ children }) => {
@@ -44,8 +48,14 @@ const PublicRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
+        <img 
+          src="/logo.png" 
+          alt="Sociogram Logo" 
+          className="w-20 h-16 rounded-2xl shadow-lg mb-4 object-contain border-2 border-violet-200"
+        />
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+        <p className="text-gray-600 mt-4 font-medium">Loading Sociogram...</p>
       </div>
     );
   }
@@ -75,26 +85,6 @@ function App() {
                   </PublicRoute>
                 } 
               />
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <ConditionalLayout showLayout={false}>
-                  <Login />
-                </ConditionalLayout>
-              </PublicRoute>
-            } 
-          />
-          <Route 
-            path="/register" 
-            element={
-              <PublicRoute>
-                <ConditionalLayout showLayout={false}>
-                  <Register />
-                </ConditionalLayout>
-              </PublicRoute>
-            } 
-          />
           
           {/* Protected routes with layout */}
           <Route 
@@ -218,16 +208,6 @@ function App() {
             } 
           />
           <Route 
-            path="/blog-assistant" 
-            element={
-              <ProtectedRoute>
-                <ConditionalLayout>
-                  <BlogAssistant />
-                </ConditionalLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
             path="/test/connectivity" 
             element={
               <ProtectedRoute>
@@ -238,11 +218,21 @@ function App() {
             } 
           />
           <Route 
-            path="/test" 
+            path="/test/simple" 
             element={
               <ProtectedRoute>
                 <ConditionalLayout>
                   <SimpleTest />
+                </ConditionalLayout>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/test/firebase" 
+            element={
+              <ProtectedRoute>
+                <ConditionalLayout>
+                  <FirebaseTest />
                 </ConditionalLayout>
               </ProtectedRoute>
             } 

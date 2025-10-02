@@ -36,21 +36,41 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Handle authentication errors
     if (error.response?.status === 401) {
-      // Clear invalid token
+      console.log('🔄 Authentication failed - clearing token');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       // Only redirect if not already on auth pages
       const currentPath = window.location.pathname;
       if (!currentPath.includes('/login') && !currentPath.includes('/register') && !currentPath.includes('/')) {
+        console.log('🔄 Redirecting to login page');
         window.location.href = '/login';
       }
     }
+    
+    // Handle user not found for own profile (indicates invalid token)
+    if (error.response?.status === 404 && error.config?.url?.includes('/user/profile') && !error.config?.url?.includes('/user/profile/')) {
+      console.log('🔄 Own profile not found - token may be invalid');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/register') && !currentPath.includes('/')) {
+        console.log('🔄 Redirecting to login page');
+        window.location.href = '/login';
+      }
+    }
+    
     return Promise.reject(error);
   }
 );
 
 export const authAPI = {
+  // Generic GET method for authenticated requests
+  get: (endpoint) => api.get(endpoint),
+  post: (endpoint, data) => api.post(endpoint, data),
+  
+  // User authentication
   register: (userData) => api.post('/user/register', userData),
   login: (userData) => api.post('/user/login', userData),
   logout: () => api.get('/user/logout'),
@@ -63,6 +83,8 @@ export const authAPI = {
   }),
   getSuggestedUsers: () => api.get('/user/suggested'),
   followUser: (userId) => api.post(`/user/followorunfollow/${userId}`),
+  followUnfollow: (userId) => api.post(`/user/followorunfollow/${userId}`),
+  getUserByUsername: (username) => api.get(`/user/profile/username/${username}`),
   getFollowers: (userId) => api.get(`/user/${userId}/followers`),
   getFollowing: (userId) => api.get(`/user/${userId}/following`),
 };
@@ -84,6 +106,7 @@ export const postAPI = {
   },
   getAllPosts: () => api.get('/post/all'),
   getUserPosts: (userId) => userId ? api.get(`/post/userpost/${userId}`) : api.get('/post/userpost/all'),
+  getUserPostsByUsername: (username) => api.get(`/post/userpost/username/${username}`),
   likePost: (postId) => api.get(`/post/${postId}/like`),
   dislikePost: (postId) => api.get(`/post/${postId}/dislike`),
   addComment: (postId, text) => api.post(`/post/${postId}/comment`, { text }),
@@ -174,6 +197,26 @@ export const groupAPI = {
   deleteGroup: (groupId) => api.delete(`/group/${groupId}/delete`),
   makeAdmin: (groupId, userId) => api.post(`/group/${groupId}/make-admin`, { userId }),
   removeAdmin: (groupId, userId) => api.post(`/group/${groupId}/remove-admin`, { userId })
+};
+
+// Explore API calls
+export const exploreAPI = {
+  getPosts: (page = 1, limit = 20) => api.get(`/explore/posts?page=${page}&limit=${limit}`),
+  getReels: (page = 1, limit = 10) => api.get(`/explore/reels?page=${page}&limit=${limit}`),
+  getTrendingHashtags: (limit = 10) => api.get(`/explore/hashtags?limit=${limit}`),
+  searchPosts: (query, page = 1, limit = 20) => api.get(`/explore/search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`),
+  getUsers: (limit = 10) => api.get(`/explore/users?limit=${limit}`)
+};
+
+// Story API calls
+export const storyAPI = {
+  createStory: (formData) => api.post('/story/create', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
+  getAllStories: () => api.get('/story/all'),
+  getUserStories: (userId) => api.get(`/story/user/${userId}`),
+  markAsViewed: (storyId) => api.post(`/story/${storyId}/view`),
+  deleteStory: (storyId) => api.delete(`/story/${storyId}`)
 };
 
 export default api;

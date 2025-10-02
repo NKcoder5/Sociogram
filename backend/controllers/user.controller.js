@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import getDataUri from "../utils/datauri.js";
 import cloudinary from "../utils/cloudinary.js";
 import { createNotification } from "./notification.controller.js";
+import { getFirebaseAuth } from "../config/firebase-admin.js";
 export const register=async(req,res)=>{
     try{
         const {username,email,password}=req.body;
@@ -45,7 +46,7 @@ export const register=async(req,res)=>{
         };
 
         return res.cookie('token', token, {httpOnly: true, sameSite: 'strict', maxAge: 1*24*60*60*1000}).status(201).json({
-                message: `Welcome to Bloggy, ${newUser.username}!`,
+                message: `Welcome to Sociogram, ${newUser.username}!`,
                 success: true,
                 user: userData,
                 token // Include token in response for frontend
@@ -162,6 +163,48 @@ export const getProfile=async(req,res)=>{
         return res.status(500).json({
             message:'Internal server error',
             success:false
+        });
+    }
+};
+
+export const getProfileByUsername = async (req, res) => {
+    try {
+        const { username } = req.params;
+        if (!username) {
+            return res.status(400).json({
+                message: 'Username is required',
+                success: false
+            });
+        }
+        
+        let user = await prisma.user.findUnique({
+            where: { username: username },
+            include: {
+                posts: { orderBy: { createdAt: 'desc' } },
+                followers: { select: { follower: { select: { id: true, username: true, profilePicture: true } } } },
+                following: { select: { following: { select: { id: true, username: true, profilePicture: true } } } }
+            }
+        });
+        
+        if (!user) {
+            return res.status(404).json({
+                message: 'User not found',
+                success: false,
+            });
+        }
+
+        // Remove password from response
+        const { password, ...userWithoutPassword } = user;
+
+        return res.status(200).json({
+            user: userWithoutPassword,
+            success: true
+        });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            message: 'Internal server error',
+            success: false
         });
     }
 };
@@ -467,6 +510,110 @@ export const uploadProfilePicture = async (req, res) => {
 
     } catch (error) {
         console.log('Upload profile picture error:', error);
+        return res.status(500).json({
+            message: 'Internal server error',
+            success: false
+        });
+    }
+};
+
+// Firebase Authentication Handler
+export const firebaseAuth = async (req, res) => {
+    try {
+        console.log('🔥 Firebase auth request received');
+        const { idToken, user: firebaseUser } = req.body;
+        
+        if (!idToken || !firebaseUser) {
+            console.error('❌ Missing required data:', { hasToken: !!idToken, hasUser: !!firebaseUser });
+            return res.status(400).json({
+                message: "Firebase ID token and user data are required",
+                success: false
+            });
+        }
+
+        console.log('📧 Firebase user email:', firebaseUser.email);
+
+        // Verify Firebase ID token
+        try {
+            const auth = getFirebaseAuth();
+            const decodedToken = await auth.verifyIdToken(idToken);
+            console.log('✅ Firebase token verified for user:', decodedToken.uid);
+        } catch (error) {
+            console.error('❌ Firebase token verification error:', error);
+            return res.status(401).json({
+                message: "Invalid Firebase token",
+                success: false
+            });
+        }
+
+        // Check if user exists in database
+        let user = await prisma.user.findUnique({
+            where: { email: firebaseUser.email },
+            include: { posts: true, followers: true, following: true }
+        });
+
+        // If user doesn't exist, create new user
+        if (!user) {
+            // Generate username from display name or email
+            let username = firebaseUser.displayName || firebaseUser.email.split('@')[0];
+            
+            // Ensure username is unique
+            const existingUser = await prisma.user.findUnique({ where: { username } });
+            if (existingUser) {
+                username = `${username}_${Date.now()}`;
+            }
+
+            user = await prisma.user.create({
+                data: {
+                    username,
+                    email: firebaseUser.email,
+                    password: '', // Empty password for Firebase users
+                    profilePicture: firebaseUser.photoURL || '',
+                    bio: '',
+                    firebaseUid: firebaseUser.uid,
+                    provider: firebaseUser.provider || 'google'
+                },
+                include: { posts: true, followers: true, following: true }
+            });
+        } else {
+            // Update Firebase UID if not set
+            if (!user.firebaseUid) {
+                user = await prisma.user.update({
+                    where: { id: user.id },
+                    data: { firebaseUid: firebaseUser.uid },
+                    include: { posts: true, followers: true, following: true }
+                });
+            }
+        }
+
+        // Generate JWT token for your backend
+        const token = jwt.sign({ userId: user.id }, process.env.SECRET_KEY, { expiresIn: '1d' });
+
+        // Format user data (same as login)
+        const userData = {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            profilePicture: user.profilePicture,
+            bio: user.bio,
+            followers: user.followers,
+            following: user.following,
+            posts: user.posts || []
+        };
+
+        return res.cookie('token', token, {
+            httpOnly: true,
+            sameSite: 'strict',
+            maxAge: 1 * 24 * 60 * 60 * 1000
+        }).json({
+            message: `Welcome ${user.username}`,
+            success: true,
+            user: userData,
+            token
+        });
+
+    } catch (error) {
+        console.error('Firebase auth error:', error);
         return res.status(500).json({
             message: 'Internal server error',
             success: false

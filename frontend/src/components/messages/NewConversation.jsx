@@ -209,7 +209,11 @@ const NewConversation = ({ isOpen, onClose, onConversationCreated }) => {
               {/* Empty State */}
               {!loading && filteredUsers.length === 0 && (
                 <div className="p-8 text-center">
-                  <Users className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                  <img 
+                    src="/logo.png" 
+                    alt="Sociogram Logo" 
+                    className="w-16 h-12 mx-auto mb-4 opacity-60 rounded-lg object-contain border border-violet-200"
+                  />
                   <h4 className="font-medium text-gray-900 mb-2">No one to message</h4>
                   <p className="text-sm text-gray-600">
                     {searchTerm 

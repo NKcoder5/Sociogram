@@ -86,6 +86,11 @@ export const FollowProvider = ({ children }) => {
         [userId]: {
           ...prev[userId],
           followers: (prev[userId]?.followers || 0) + (wasFollowing ? -1 : 1)
+        },
+        // Update current user's following count optimistically
+        [user.id]: {
+          followers: prev[user.id]?.followers || 0,
+          following: (prev[user.id]?.following || 0) + (wasFollowing ? -1 : 1)
         }
       }));
       
@@ -99,6 +104,11 @@ export const FollowProvider = ({ children }) => {
           [userId]: {
             followers: response.data.targetUserFollowerCount,
             following: prev[userId]?.following || 0
+          },
+          // Update current user's following count
+          [user.id]: {
+            followers: prev[user.id]?.followers || 0,
+            following: (prev[user.id]?.following || 0) + (wasFollowing ? -1 : 1)
           }
         }));
         
@@ -190,9 +200,11 @@ export const FollowProvider = ({ children }) => {
     return processingUsers.has(userId);
   }, [processingUsers]);
 
-  // Get follow counts for a user
+  // Get follow counts for a user - make it reactive to followCounts changes
   const getFollowCounts = useCallback((userId) => {
-    return followCounts[userId] || { followers: 0, following: 0 };
+    const counts = followCounts[userId] || { followers: 0, following: 0 };
+    console.log(`📊 Getting follow counts for ${userId}:`, counts);
+    return counts;
   }, [followCounts]);
 
   // Load initial follow state from API
@@ -207,6 +219,16 @@ export const FollowProvider = ({ children }) => {
       const followingIds = new Set(following.map(user => user.id));
       
       setFollowingUsers(followingIds);
+      
+      // Initialize current user's follow counts
+      const currentUserProfile = profileResponse.data.user;
+      setFollowCounts(prev => ({
+        ...prev,
+        [currentUserId]: {
+          followers: currentUserProfile.followers?.length || 0,
+          following: currentUserProfile.following?.length || 0
+        }
+      }));
       
       // Initialize counts for followed users
       following.forEach(user => {

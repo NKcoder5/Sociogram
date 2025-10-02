@@ -10,7 +10,11 @@ import messageRoute from "./routes/message.route.js";
 import seedRoute from "./routes/seed.route.js";
 import notificationRoute from "./routes/notification.route.js";
 import groupRoute from "./routes/group.route.js";
+import exploreRoute from "./routes/explore.route.js";
+import storyRoute from "./routes/story.route.js";
 import { initializeSocket } from "./config/socket.js";
+import { startStoryCleanupScheduler } from "./utils/storyCleanup.js";
+import { initializeFirebaseAdmin } from "./config/firebase-admin.js";
 import path from "path";
 
 // Load environment variables from both project root and backend directory
@@ -66,11 +70,14 @@ app.use(cors(corsOptions));
 
 //yha pr apni api ayengi
 app.use("/api/v1/user", userRoute);
+app.use("/api/v1/auth", userRoute); // Also expose auth endpoints under /auth
 app.use("/api/v1/post", postRoute);
 app.use("/api/v1/message", messageRoute);
 app.use("/api/v1/group", groupRoute);
 app.use("/api/v1/admin", seedRoute);
 app.use("/api/v1/notifications", notificationRoute);
+app.use("/api/v1/explore", exploreRoute);
+app.use("/api/v1/story", storyRoute);
 
 // Add upload route back
 import uploadRoute from "./routes/upload.route.js";
@@ -98,7 +105,9 @@ app.get("/", (req,res)=>{
             messages: "/api/v1/message",
             groups: "/api/v1/group",
             notifications: "/api/v1/notifications",
-            upload: "/api/v1/upload"
+            upload: "/api/v1/upload",
+            explore: "/api/v1/explore",
+            stories: "/api/v1/story"
         }
     });
 });
@@ -112,8 +121,20 @@ app.get("/health", (req,res)=>{
     });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
     connectDB();
+    
+    // Initialize Firebase Admin
+    try {
+        await initializeFirebaseAdmin();
+        console.log('🔥 Firebase Admin initialized');
+    } catch (error) {
+        console.error('❌ Failed to initialize Firebase Admin:', error);
+    }
+    
     console.log(`Server listening at port ${PORT}`);
     console.log(`Socket.io server ready for connections`);
+    
+    // Start story cleanup scheduler
+    startStoryCleanupScheduler();
 });

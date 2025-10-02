@@ -21,17 +21,8 @@ const SuggestedUsers = () => {
       setSuggestedUsers(unfollowedUsers);
     } catch (error) {
       console.error('Error fetching suggested users:', error);
-      // Mock data for demo purposes - only unfollowed users
-      const mockUsers = [
-        { _id: '1', username: 'alex_dev', profilePicture: null },
-        { _id: '2', username: 'sarah_designer', profilePicture: null },
-        { _id: '3', username: 'mike_tech', profilePicture: null },
-        { _id: '4', username: 'emma_writer', profilePicture: null },
-        { _id: '5', username: 'john_creator', profilePicture: null },
-      ];
-      // Filter mock users to only show unfollowed ones, limit to 5
-      const unfollowedMockUsers = mockUsers.filter(user => !isFollowing(user._id)).slice(0, 5);
-      setSuggestedUsers(unfollowedMockUsers);
+      // No fallback mock data - keep empty array for dynamic-only policy
+      setSuggestedUsers([]);
     } finally {
       setLoading(false);
     }
@@ -129,14 +120,13 @@ const SuggestedUsers = () => {
                   <div className="flex items-center space-x-3 mt-1">
                     <p className="text-sm text-gray-600">@{user.username}</p>
                     <div className="flex items-center space-x-1 text-xs text-gray-500">
-                      <span>{Math.floor(Math.random() * 1000) + 100} followers</span>
+                      <span>Suggested for you</span>
                     </div>
                   </div>
-                  {index < 3 && (
+                  {user.mutualFollowers && user.mutualFollowers.length > 0 && (
                     <p className="text-xs text-gray-500 mt-1">
-                      {index === 0 && "Followed by alex_dev and 12 others"}
-                      {index === 1 && "Popular in your area"}
-                      {index === 2 && "Similar interests"}
+                      Followed by {user.mutualFollowers.slice(0, 2).map(f => f.username).join(', ')}
+                      {user.mutualFollowers.length > 2 && ` and ${user.mutualFollowers.length - 2} others`}
                     </p>
                   )}
                 </div>

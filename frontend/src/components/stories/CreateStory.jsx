@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { XMarkIcon, PhotoIcon, VideoCameraIcon } from '@heroicons/react/24/outline';
+import { storyAPI } from '../../utils/api';
 
 const CreateStory = ({ onClose, onStoryCreated }) => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -19,23 +20,39 @@ const CreateStory = ({ onClose, onStoryCreated }) => {
   };
 
   const handleCreateStory = async () => {
-    if (!selectedFile) return;
+    if (!selectedFile && !caption) {
+      alert('Please select a file or add text for your story');
+      return;
+    }
 
     setIsUploading(true);
     try {
-      // In a real app, upload to server
-      const newStory = {
-        id: Date.now(),
-        image: preview,
-        caption,
-        timestamp: new Date(),
-        viewed: false
-      };
+      const formData = new FormData();
+      
+      if (selectedFile) {
+        formData.append('media', selectedFile);
+      }
+      
+      if (caption) {
+        formData.append('text', caption);
+      }
+      
+      // Set duration to 24 hours (default)
+      formData.append('duration', '24');
 
-      onStoryCreated(newStory);
-      onClose();
+      console.log('📤 Creating story...');
+      const response = await storyAPI.createStory(formData);
+      
+      if (response.data.success) {
+        console.log('✅ Story created successfully');
+        onStoryCreated(response.data.story);
+        onClose();
+      } else {
+        throw new Error(response.data.message || 'Failed to create story');
+      }
     } catch (error) {
-      console.error('Error creating story:', error);
+      console.error('❌ Error creating story:', error);
+      alert('Failed to create story. Please try again.');
     } finally {
       setIsUploading(false);
     }

@@ -1,3 +1,6 @@
+/* Import custom animations */
+@import './styles/animations.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -10,6 +13,12 @@
     padding: 0;
     min-height: 100vh;
     overflow-x: hidden; /* Prevent horizontal scrollbar */
+  }
+  
+  /* Prevent scrolling on auth pages */
+  body.auth-page {
+    overflow: hidden;
+    height: 100vh;
   }
   
   body {

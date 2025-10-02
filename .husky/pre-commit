@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Running static data detection..."
+node scripts/check-static-data.js
+
+if [ $? -ne 0 ]; then
+  echo "❌ Commit blocked: Static data violations found!"
+  echo "Please fix the violations before committing."
+  exit 1
+fi
+
+echo "✅ Static data check passed!"

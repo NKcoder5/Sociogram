@@ -1,94 +1,67 @@
 import React, { useState, useEffect } from 'react';
 import { MagnifyingGlassIcon, HeartIcon, ChatBubbleOvalLeftIcon } from '@heroicons/react/24/outline';
+import { authAPI } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 
 const Explore = () => {
   const [posts, setPosts] = useState([]);
+  const [hashtags, setHashtags] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('posts');
   const [selectedPost, setSelectedPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
-    // Mock explore posts data
-    setPosts([
-      {
-        id: 1,
-        image: 'https://picsum.photos/400/400?random=10',
-        likes: 1234,
-        comments: 45,
-        user: { username: 'photographer_pro' },
-        caption: 'Golden hour magic ✨ #photography #goldenhour'
-      },
-      {
-        id: 2,
-        image: 'https://picsum.photos/400/400?random=11',
-        likes: 2156,
-        comments: 89,
-        user: { username: 'nature_lover' },
-        caption: 'Mountain views that take your breath away 🏔️ #nature #mountains'
-      },
-      {
-        id: 3,
-        image: 'https://picsum.photos/400/400?random=12',
-        likes: 987,
-        comments: 23,
-        user: { username: 'food_artist' },
-        caption: 'Homemade pizza perfection 🍕 #food #homemade'
-      },
-      {
-        id: 4,
-        image: 'https://picsum.photos/400/400?random=13',
-        likes: 3421,
-        comments: 156,
-        user: { username: 'travel_diary' },
-        caption: 'Lost in the streets of Paris 🇫🇷 #travel #paris'
-      },
-      {
-        id: 5,
-        image: 'https://picsum.photos/400/400?random=14',
-        likes: 1876,
-        comments: 67,
-        user: { username: 'art_studio' },
-        caption: 'Abstract art in progress 🎨 #art #abstract'
-      },
-      {
-        id: 6,
-        image: 'https://picsum.photos/400/400?random=15',
-        likes: 2543,
-        comments: 98,
-        user: { username: 'fitness_life' },
-        caption: 'Morning workout complete 💪 #fitness #motivation'
-      },
-      {
-        id: 7,
-        image: 'https://picsum.photos/400/400?random=16',
-        likes: 1654,
-        comments: 34,
-        user: { username: 'pet_lover' },
-        caption: 'My furry best friend 🐕 #pets #dogs'
-      },
-      {
-        id: 8,
-        image: 'https://picsum.photos/400/400?random=17',
-        likes: 3210,
-        comments: 123,
-        user: { username: 'music_beats' },
-        caption: 'Studio session vibes 🎵 #music #studio'
-      },
-      {
-        id: 9,
-        image: 'https://picsum.photos/400/400?random=18',
-        likes: 876,
-        comments: 45,
-        user: { username: 'fashion_style' },
-        caption: 'Street style inspiration 👗 #fashion #style'
-      }
-    ]);
-  }, []);
+    fetchExploreData();
+  }, [activeTab]);
 
-  const filteredPosts = posts.filter(post =>
-    post.user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.caption.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchExploreData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      if (activeTab === 'posts') {
+        const response = await authAPI.get('/explore/posts');
+        setPosts(response.data.posts || []);
+      } else if (activeTab === 'reels') {
+        const response = await authAPI.get('/explore/reels');
+        setPosts(response.data.reels || []);
+      } else if (activeTab === 'tags') {
+        const response = await authAPI.get('/explore/hashtags');
+        setHashtags(response.data.hashtags || []);
+      }
+    } catch (error) {
+      console.error('Error fetching explore data:', error);
+      setError('Failed to load explore content');
+      // Fallback to empty arrays instead of mock data
+      setPosts([]);
+      setHashtags([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      fetchExploreData();
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const response = await authAPI.get(`/explore/search?q=${encodeURIComponent(searchTerm)}`);
+      setPosts(response.data.posts || []);
+    } catch (error) {
+      console.error('Error searching posts:', error);
+      setError('Search failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredPosts = searchTerm ? posts : posts;
 
   const PostModal = ({ post, onClose }) => (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
@@ -99,12 +72,12 @@ const Explore = () => {
         <div className="w-80 flex flex-col">
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <span className="text-sm font-semibold">
-                  {post.user.username.charAt(0).toUpperCase()}
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                <span className="text-sm font-semibold text-white">
+                  {post.author?.username?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
-              <span className="font-semibold">{post.user.username}</span>
+              <span className="font-semibold">{post.author?.username || 'Unknown User'}</span>
             </div>
           </div>
           <div className="flex-1 p-4">
@@ -138,10 +111,11 @@ const Explore = () => {
         <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
         <input
           type="text"
-          placeholder="Search"
+          placeholder="Search posts and users..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-instagram-blue"
+          onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          className="w-full pl-10 pr-4 py-2 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
         />
       </div>
 
@@ -162,51 +136,94 @@ const Explore = () => {
         ))}
       </div>
 
+      {/* Loading State */}
+      {loading && (
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="text-center py-12">
+          <p className="text-red-500 mb-4">{error}</p>
+          <button 
+            onClick={fetchExploreData}
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+          >
+            Try Again
+          </button>
+        </div>
+      )}
+
       {/* Trending Hashtags */}
-      {activeTab === 'tags' && (
+      {activeTab === 'tags' && !loading && !error && (
         <div className="grid grid-cols-1 gap-4 mb-6">
-          {['#photography', '#travel', '#food', '#fitness', '#art', '#nature'].map((tag) => (
-            <div key={tag} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-              <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                <span className="text-xl">#</span>
-              </div>
-              <div>
-                <p className="font-semibold">{tag}</p>
-                <p className="text-sm text-gray-500">{Math.floor(Math.random() * 1000000).toLocaleString()} posts</p>
-              </div>
+          {hashtags.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>No trending hashtags found</p>
             </div>
-          ))}
+          ) : (
+            hashtags.map((hashtagData, index) => (
+              <div key={hashtagData.tag || index} className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                  <span className="text-xl text-white">#</span>
+                </div>
+                <div>
+                  <p className="font-semibold">{hashtagData.tag}</p>
+                  <p className="text-sm text-gray-500">{hashtagData.postCount.toLocaleString()} posts</p>
+                  {hashtagData.trending && (
+                    <span className="inline-block px-2 py-1 text-xs bg-red-100 text-red-600 rounded-full mt-1">
+                      Trending
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       )}
 
       {/* Posts Grid */}
-      {(activeTab === 'posts' || activeTab === 'reels') && (
+      {(activeTab === 'posts' || activeTab === 'reels') && !loading && !error && (
         <div className="grid grid-cols-3 gap-1">
-          {filteredPosts.map((post) => (
-            <div
-              key={post.id}
-              className="relative aspect-square cursor-pointer group"
-              onClick={() => setSelectedPost(post)}
-            >
-              <img
-                src={post.image}
-                alt="Post"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-4 text-white">
-                  <div className="flex items-center space-x-1">
-                    <HeartIcon className="w-5 h-5 fill-current" />
-                    <span className="text-sm font-semibold">{post.likes}</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <ChatBubbleOvalLeftIcon className="w-5 h-5 fill-current" />
-                    <span className="text-sm font-semibold">{post.comments}</span>
+          {filteredPosts.length === 0 ? (
+            <div className="col-span-3 text-center py-12 text-gray-500">
+              <p>No {activeTab} found</p>
+              {searchTerm && (
+                <p className="text-sm mt-2">Try searching for something else</p>
+              )}
+            </div>
+          ) : (
+            filteredPosts.map((post) => (
+              <div
+                key={post.id}
+                className="relative aspect-square cursor-pointer group"
+                onClick={() => setSelectedPost(post)}
+              >
+                <img
+                  src={post.image}
+                  alt="Post"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.target.src = '/placeholder-image.jpg';
+                  }}
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-4 text-white">
+                    <div className="flex items-center space-x-1">
+                      <HeartIcon className={`w-5 h-5 ${post.isLiked ? 'fill-red-500 text-red-500' : 'fill-current'}`} />
+                      <span className="text-sm font-semibold">{post.likes || 0}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <ChatBubbleOvalLeftIcon className="w-5 h-5 fill-current" />
+                      <span className="text-sm font-semibold">{post.comments || 0}</span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
       )}
 

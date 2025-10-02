@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useFollow } from '../../context/FollowContext';
 import { Link } from 'react-router-dom';
 import { ArrowTrendingUpIcon, EyeIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { authAPI, postAPI } from '../../utils/api';
 
 const UserStatsCard = () => {
   const { user } = useAuth();
+  const { getFollowCounts } = useFollow();
   const [stats, setStats] = useState({
     posts: 0,
     followers: 0,
@@ -35,10 +37,13 @@ const UserStatsCard = () => {
         const totalEngagement = totalLikes + totalComments;
         const engagementRate = userPosts.length > 0 ? ((totalEngagement / userPosts.length) * 100 / Math.max(userData.followers?.length || 1, 1)).toFixed(1) : '0.0';
         
+        // Get real-time follow counts from context
+        const followCounts = getFollowCounts(user.id);
+        
         setStats({
           posts: userPosts.length,
-          followers: userData.followers?.length || 0,
-          following: userData.following?.length || 0,
+          followers: followCounts.followers || userData.followers?.length || 0,
+          following: followCounts.following || userData.following?.length || 0,
           likes: totalLikes,
           views: Math.max(totalLikes * 3, userPosts.length * 15), // Realistic view estimation
           engagement: Math.min(parseFloat(engagementRate), 15.0) // Cap at 15% for realism
@@ -63,6 +68,18 @@ const UserStatsCard = () => {
 
     fetchRealUserStats();
   }, [user]);
+
+  // Update follow counts in real-time when they change
+  useEffect(() => {
+    if (user?.id) {
+      const followCounts = getFollowCounts(user.id);
+      setStats(prevStats => ({
+        ...prevStats,
+        followers: followCounts.followers || prevStats.followers,
+        following: followCounts.following || prevStats.following
+      }));
+    }
+  }, [user?.id, getFollowCounts]);
 
   const formatNumber = (num) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';

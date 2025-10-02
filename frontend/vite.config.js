@@ -13,7 +13,9 @@ export default defineConfig(({ command, mode }) => {
       port: 5000,
       allowedHosts: true,
       headers: {
-        'Cache-Control': 'no-cache'
+        'Cache-Control': 'no-cache',
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+        'Cross-Origin-Embedder-Policy': 'unsafe-none'
       }
     },
     build: {

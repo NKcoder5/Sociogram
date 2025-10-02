@@ -82,10 +82,22 @@ const ProfilePicture = ({ user, size = 'large', editable = false, onUpdate }) =>
   const displayUser = user || currentUser;
   const isEditable = editable && currentUser?.id === displayUser?.id;
 
+  // Generate initials for default avatar
+  const getInitials = (user) => {
+    if (!user) return '?';
+    if (user.username) {
+      return user.username.charAt(0).toUpperCase();
+    }
+    if (user.email) {
+      return user.email.charAt(0).toUpperCase();
+    }
+    return '?';
+  };
+
   return (
     <div className="relative inline-block">
       <div
-        className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center shadow-lg ${
+        className={`${sizeClasses[size]} rounded-full overflow-hidden bg-gradient-to-br from-purple-500 via-pink-500 to-blue-500 flex items-center justify-center shadow-lg border-2 border-white ${
           isEditable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
         } ${uploading ? 'opacity-50' : ''}`}
         onClick={handleClick}
@@ -93,12 +105,31 @@ const ProfilePicture = ({ user, size = 'large', editable = false, onUpdate }) =>
         {displayUser?.profilePicture ? (
           <img
             src={displayUser.profilePicture}
-            alt={`${displayUser.username}'s profile`}
+            alt={`${displayUser.username || displayUser.email || 'User'}'s profile`}
             className="w-full h-full object-cover"
+            onError={(e) => {
+              // If image fails to load, hide the image and show initials
+              console.log('Profile picture failed to load:', displayUser.profilePicture);
+              e.target.style.display = 'none';
+              const initialsDiv = e.target.parentNode.querySelector('.initials-fallback');
+              if (initialsDiv) {
+                initialsDiv.style.display = 'flex';
+              }
+            }}
           />
-        ) : (
-          <UserIcon className={`${iconSizes[size]} text-white`} />
-        )}
+        ) : null}
+        
+        {/* Default avatar with initials */}
+        <div 
+          className={`initials-fallback w-full h-full flex items-center justify-center text-white font-bold ${
+            displayUser?.profilePicture ? 'hidden' : 'flex'
+          }`}
+          style={{ 
+            fontSize: size === 'small' ? '0.75rem' : size === 'medium' ? '1rem' : size === 'large' ? '1.5rem' : '2rem' 
+          }}
+        >
+          {getInitials(displayUser)}
+        </div>
         
         {/* Upload overlay */}
         {isEditable && (

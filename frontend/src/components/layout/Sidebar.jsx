@@ -13,7 +13,6 @@ import {
   HeartIcon,
   BellIcon,
   ChevronRightIcon,
-  PencilIcon,
   Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import { Users } from 'lucide-react';
@@ -24,8 +23,7 @@ import {
   GlobeAltIcon as GlobeAltIconSolid,
   PlayIcon as PlayIconSolid,
   HeartIcon as HeartIconSolid,
-  BellIcon as BellIconSolid,
-  PencilIcon as PencilIconSolid
+  BellIcon as BellIconSolid
 } from '@heroicons/react/24/solid';
 
 const Sidebar = () => {
@@ -71,12 +69,6 @@ const Sidebar = () => {
       activeIcon: PlusIcon,
     },
     {
-      name: 'Blog Assistant',
-      path: '/blog-assistant',
-      icon: PencilIcon,
-      activeIcon: PencilIconSolid,
-    },
-    {
       name: 'Profile',
       path: `/profile/${user?.username}`,
       icon: UserIcon,
@@ -88,32 +80,35 @@ const Sidebar = () => {
     <div className="fixed left-0 top-0 h-full w-80 bg-white/80 backdrop-blur-lg border-r border-gray-200 z-50 shadow-xl">
       <div className="flex flex-col h-full">
         {/* Logo and User Section */}
-        <div className="p-6 border-b border-gray-100">
+        <div className="px-6 py-5 border-b border-gray-100">
           <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Users className="w-6 h-6 text-white" />
+            {/* Logo and Brand */}
+            <div className="flex items-center space-x-4">
+              <img 
+                src="/logo.png" 
+                alt="Sociogram Logo" 
+                className="w-14 h-11 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 object-contain border-2 border-violet-200 hover:border-violet-300"
+              />
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent leading-tight mb-0.5">
+                  Sociogram
+                </h1>
+                <p className="text-xs text-gray-500 font-medium">Social Platform</p>
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                Sociogram
-              </h1>
             </div>
             
-            {/* Sign Out Button - Top Right */}
+            {/* Sign Out Button - Compact */}
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 hover:bg-red-50 group"
+              className="flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 hover:bg-red-50 group ml-3"
               title="Sign Out"
             >
               <ArrowRightOnRectangleIcon className="h-5 w-5 text-gray-600 group-hover:text-red-600 transition-colors duration-200" />
-              <span className="font-medium text-gray-700 group-hover:text-red-700 transition-colors duration-200 text-sm">
-                Sign Out
-              </span>
             </button>
           </div>
           
           {/* User Info */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-3">
+          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-4">
             <div className="flex items-center space-x-3">
               <ProfilePicture user={user} size="medium" />
               <div className="flex-1">

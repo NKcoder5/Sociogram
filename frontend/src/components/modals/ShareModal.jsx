@@ -137,6 +137,11 @@ const ShareModal = ({ post, isOpen, onClose }) => {
           <h4 className="font-semibold mb-3 text-gray-700">Send to:</h4>
           {filteredUsers.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
+              <img 
+                src="/logo.png" 
+                alt="Sociogram Logo" 
+                className="w-16 h-12 mx-auto mb-4 opacity-60 rounded-lg object-contain border border-violet-200"
+              />
               <p>No users found.</p>
               <p className="text-sm">Follow some users to share content with them!</p>
             </div>

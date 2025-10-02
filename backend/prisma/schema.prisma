@@ -18,6 +18,8 @@ model User {
   profilePicture  String?
   bio             String?
   isPrivate       Boolean  @default(false)
+  firebaseUid     String?  @unique
+  provider        String?  @default("email")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -45,6 +47,10 @@ model User {
   // Group relationships
   ownedGroups    Conversation[] @relation("GroupOwner")
   adminGroups    GroupAdmin[]   @relation("GroupAdmins")
+  
+  // Stories
+  stories        Story[]
+  storyViews     StoryView[]
 
   @@map("users")
 }
@@ -263,4 +269,35 @@ model Notification {
   receiver    User     @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+model Story {
+  id          String   @id @default(cuid())
+  mediaUrl    String?
+  mediaType   String   @default("text") // text, image, video
+  text        String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  authorId    String
+  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views       StoryView[]
+  
+  @@map("stories")
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  viewedAt  DateTime @default(now())
+  
+  // Relationships
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([storyId, userId])
+  @@map("story_views")
 }

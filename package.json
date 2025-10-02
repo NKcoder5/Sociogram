@@ -1,17 +1,22 @@
 {
   "type": "module",
   "scripts": {
-    "build-frontend": "cd frontend && npm run build"
+    "build-frontend": "cd frontend && npm run build",
+    "check-static-data": "node scripts/check-static-data.js",
+    "lint:static-data": "npm run check-static-data",
+    "prepare": "husky install"
   },
   "dependencies": {
     "@prisma/client": "^6.16.2",
     "cloudinary": "^2.7.0",
     "datauri": "^4.1.0",
+    "firebase": "^12.3.0",
     "multer": "^2.0.2",
     "prisma": "^6.16.2"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "husky": "^8.0.3",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.12"
   }

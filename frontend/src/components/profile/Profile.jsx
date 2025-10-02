@@ -22,39 +22,54 @@ const Profile = () => {
 
   const fetchUserProfile = async () => {
     try {
+      setLoading(true);
       let profileResponse;
       let postsResponse;
       
       if (username === currentUser?.username || !username) {
         // Fetch current user's profile
+        console.log('Fetching current user profile');
         profileResponse = await authAPI.getProfile();
         postsResponse = await postAPI.getUserPosts();
       } else {
         // Fetch specific user's profile by username
+        console.log('Fetching user profile for username:', username);
         try {
-          // Try to fetch user by username (if endpoint exists)
           profileResponse = await authAPI.getUserByUsername(username);
           postsResponse = await postAPI.getUserPostsByUsername(username);
         } catch (error) {
-          // Fallback: create a mock user profile for demonstration
-          console.log('User profile endpoint not found, using mock data');
-          const mockUser = {
-            id: 'mock_' + username,
-            username: username,
-            email: username + '@example.com',
-            bio: 'Food blogger 🍕 | Recipe creator 🔥',
-            followers: [{ id: 'follower1' }],
-            following: [{ id: 'following1' }, { id: 'following2' }, { id: 'following3' }],
-            posts: []
-          };
-          setUser(mockUser);
-          setPosts([]);
-          setLoading(false);
-          return;
+          console.error('Error fetching user by username:', error);
+          // Try to find user from seeded data by searching all users
+          try {
+            const allUsersResponse = await authAPI.getSuggestedUsers();
+            const allUsers = allUsersResponse.data.users || [];
+            const foundUser = allUsers.find(u => u.username === username);
+            
+            if (foundUser) {
+              console.log('Found user in suggested users:', foundUser);
+              setUser(foundUser);
+              // Fetch posts for this user by ID
+              try {
+                const userPostsResponse = await postAPI.getUserPosts(foundUser.id);
+                setPosts(userPostsResponse.data.posts || []);
+              } catch (postError) {
+                console.log('No posts found for user');
+                setPosts([]);
+              }
+              setLoading(false);
+              return;
+            }
+          } catch (searchError) {
+            console.error('Error searching for user:', searchError);
+          }
+          
+          // If still not found, show error
+          throw new Error(`User ${username} not found`);
         }
       }
       
       const userData = profileResponse.data.user || profileResponse.data;
+      console.log('Profile user data:', userData);
       setUser(userData);
       
       const postsData = postsResponse.data.posts || postsResponse.data || [];
@@ -64,7 +79,8 @@ const Profile = () => {
       // Check if current user is following this profile user
       if (userData.followers && currentUser) {
         setIsFollowing(userData.followers.some(follower => 
-          follower.id === currentUser.id || follower._id === currentUser.id
+          follower.id === currentUser.id || follower._id === currentUser.id ||
+          follower.followerId === currentUser.id
         ));
       }
     } catch (error) {
@@ -78,10 +94,24 @@ const Profile = () => {
 
   const handleFollowToggle = async () => {
     try {
-      await authAPI.followUnfollow(user._id);
+      console.log('Toggling follow for user:', user.id);
+      await authAPI.followUnfollow(user.id);
       setIsFollowing(!isFollowing);
+      
+      // Update follower count optimistically
+      if (user) {
+        const updatedUser = {
+          ...user,
+          followers: isFollowing 
+            ? (user.followers || []).filter(f => f.id !== currentUser.id)
+            : [...(user.followers || []), { id: currentUser.id }]
+        };
+        setUser(updatedUser);
+      }
     } catch (error) {
       console.error('Error toggling follow:', error);
+      // Revert the optimistic update on error
+      setIsFollowing(isFollowing);
     }
   };
 

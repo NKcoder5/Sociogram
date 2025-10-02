@@ -93,7 +93,11 @@ const ChatWithFollowed = () => {
       <div className="max-h-96 overflow-y-auto">
         {filteredUsers.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            <ChatBubbleLeftIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+            <img 
+              src="/logo.png" 
+              alt="Sociogram Logo" 
+              className="w-16 h-12 mx-auto mb-3 opacity-60 rounded-lg object-contain border border-violet-200"
+            />
             <p className="font-medium">No users found</p>
             <p className="text-sm">Follow some users to start chatting with them!</p>
           </div>
