@@ -1,5 +1,5 @@
 import express from 'express';
-import { seedDatabase } from '../utils/seedData.js';
+import { seedDatabaseImproved as seedDatabase } from '../utils/seedDataImproved.js';
 import { seedConversationsAndFollows } from '../utils/seedConversations.js';
 
 const router = express.Router();

@@ -180,7 +180,9 @@ const InteractivePost = React.memo(({ post, onPostUpdate }) => {
           <ProfilePicture user={post.author} size="small" />
           <div>
             <p className="font-semibold text-sm">{post.author?.username || 'Unknown User'}</p>
-            <p className="text-xs text-gray-500">2h</p>
+            <p className="text-xs text-gray-500">
+              {post.createdAt ? new Date(post.createdAt).toLocaleDateString() : 'Just now'}
+            </p>
           </div>
         </div>
         <div className="relative delete-menu-container">

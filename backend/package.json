@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon index.js",
-    "seed": "node utils/runSeed.js"
+    "seed": "node utils/runImprovedSeed.js",
+    "seed-full": "node utils/runFullSeed.js"
   },
   "keywords": [],
   "author": "",

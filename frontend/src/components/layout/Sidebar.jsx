@@ -63,6 +63,12 @@ const Sidebar = () => {
       activeIcon: MessageIconSolid,
     },
     {
+      name: 'Activity',
+      path: '/activity',
+      icon: HeartIcon,
+      activeIcon: HeartIconSolid,
+    },
+    {
       name: 'Create',
       path: '/create',
       icon: PlusIcon,

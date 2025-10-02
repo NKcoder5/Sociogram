@@ -312,7 +312,7 @@ const Discovery = () => {
                   onClick={() => setSelectedPost(post)}
                 >
                   <img
-                    src={post.mediaUrl || post.image || 'https://picsum.photos/400/400?random=' + post.id}
+                    src={post.mediaUrl || post.image || '/placeholder-image.jpg'}
                     alt="Post"
                     className="w-full h-full object-cover"
                   />
@@ -339,7 +339,7 @@ const Discovery = () => {
               onClick={() => setSelectedPost(post)}
             >
               <img
-                src={post.mediaUrl || post.image || 'https://picsum.photos/400/400?random=' + post.id}
+                src={post.mediaUrl || post.image || '/placeholder-image.jpg'}
                 alt="Post"
                 className="w-full h-full object-cover"
               />

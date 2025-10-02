@@ -18,9 +18,6 @@ import Activity from './components/activity/Activity';
 import Following from './components/follow/Following';
 import Followers from './components/follow/Followers';
 import FollowDebugger from './components/debug/FollowDebugger';
-import FrontendBackendTest from './components/test/FrontendBackendTest';
-import SimpleTest from './components/test/SimpleTest';
-import FirebaseTest from './components/firebase/FirebaseTest';
 import Settings from './components/settings/Settings';
 
 const ProtectedRoute = ({ children }) => {
@@ -203,36 +200,6 @@ function App() {
               <ProtectedRoute>
                 <ConditionalLayout>
                   <FollowDebugger />
-                </ConditionalLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/test/connectivity" 
-            element={
-              <ProtectedRoute>
-                <ConditionalLayout>
-                  <FrontendBackendTest />
-                </ConditionalLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/test/simple" 
-            element={
-              <ProtectedRoute>
-                <ConditionalLayout>
-                  <SimpleTest />
-                </ConditionalLayout>
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/test/firebase" 
-            element={
-              <ProtectedRoute>
-                <ConditionalLayout>
-                  <FirebaseTest />
                 </ConditionalLayout>
               </ProtectedRoute>
             } 
