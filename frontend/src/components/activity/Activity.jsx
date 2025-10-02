@@ -126,34 +126,9 @@ const Activity = () => {
           }
         });
         
-        // If still no activities, create some sample activities for demo
-        if (recentActivities.length === 0) {
-          const sampleActivities = [
-            {
-              id: 'welcome-1',
-              type: 'follow',
-              users: ['Welcome to Sociogram!'],
-              count: 1,
-              postImage: null,
-              timestamp: new Date(Date.now() - 1000 * 60 * 30),
-              postType: null
-            },
-            {
-              id: 'welcome-2',
-              type: 'like',
-              users: ['System'],
-              count: 1,
-              postImage: null,
-              timestamp: new Date(Date.now() - 1000 * 60 * 60),
-              postType: 'photo'
-            }
-          ];
-          setActivities(sampleActivities);
-        } else {
-          // Sort by timestamp and take most recent
-          const sortedActivities = recentActivities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 6);
-          setActivities(sortedActivities);
-        }
+        // Sort by timestamp and take most recent
+        const sortedActivities = recentActivities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 6);
+        setActivities(sortedActivities);
       }
       
       // Set top posts from user's actual posts
@@ -186,23 +161,58 @@ const Activity = () => {
         category: 'User'
       })));
 
-      // Set trending topics from platform hashtags
-      setTrendingTopics([
-        { tag: '#sociogram', posts: 125000, category: 'Platform' },
-        { tag: '#photography', posts: 89000, category: 'Creative' },
-        { tag: '#lifestyle', posts: 67000, category: 'Lifestyle' },
-        { tag: '#technology', posts: 54000, category: 'Tech' },
-        { tag: '#travel', posts: 43000, category: 'Travel' },
-        { tag: '#fitness', posts: 38000, category: 'Health' },
-        { tag: '#food', posts: 32000, category: 'Food' },
-        { tag: '#art', posts: 28000, category: 'Creative' }
-      ]);
+      // Generate trending topics from actual post data
+      const allPosts = await postAPI.getAllPosts();
+      const posts = allPosts.data.posts || [];
+      
+      // Extract hashtags from post captions and calculate counts
+      const hashtagCounts = {};
+      posts.forEach(post => {
+        if (post.caption) {
+          const hashtags = post.caption.match(/#\w+/g) || [];
+          hashtags.forEach(tag => {
+            const normalizedTag = tag.toLowerCase();
+            hashtagCounts[normalizedTag] = (hashtagCounts[normalizedTag] || 0) + 1;
+          });
+        }
+      });
+
+      // Convert to trending topics format and sort by count
+      const trendingTopicsFromPosts = Object.entries(hashtagCounts)
+        .map(([tag, count]) => ({
+          tag,
+          posts: count,
+          category: getCategoryForTag(tag)
+        }))
+        .sort((a, b) => b.posts - a.posts)
+        .slice(0, 8);
+
+      // If no hashtags found, use minimal fallback
+      if (trendingTopicsFromPosts.length === 0) {
+        setTrendingTopics([
+          { tag: '#sociogram', posts: posts.length, category: 'Platform' }
+        ]);
+      } else {
+        setTrendingTopics(trendingTopicsFromPosts);
+      }
 
     } catch (error) {
       console.error('Error fetching activity data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCategoryForTag = (tag) => {
+    const tagLower = tag.toLowerCase();
+    if (tagLower.includes('photo') || tagLower.includes('art') || tagLower.includes('design')) return 'Creative';
+    if (tagLower.includes('food') || tagLower.includes('recipe') || tagLower.includes('cooking')) return 'Food';
+    if (tagLower.includes('travel') || tagLower.includes('vacation') || tagLower.includes('trip')) return 'Travel';
+    if (tagLower.includes('tech') || tagLower.includes('code') || tagLower.includes('programming')) return 'Tech';
+    if (tagLower.includes('fitness') || tagLower.includes('health') || tagLower.includes('workout')) return 'Health';
+    if (tagLower.includes('lifestyle') || tagLower.includes('life') || tagLower.includes('daily')) return 'Lifestyle';
+    if (tagLower.includes('sociogram') || tagLower.includes('platform')) return 'Platform';
+    return 'General';
   };
 
   const handleFollow = async (userId) => {

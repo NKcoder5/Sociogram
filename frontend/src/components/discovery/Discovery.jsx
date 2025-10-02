@@ -57,7 +57,8 @@ const Discovery = () => {
       }
 
       // Generate trending hashtags
-      generateTrendingHashtags();
+      const hashtags = await generateTrendingHashtags();
+      setTrendingHashtags(hashtags);
     } catch (error) {
       console.error('Error loading discovery data:', error);
     } finally {
@@ -65,20 +66,59 @@ const Discovery = () => {
     }
   };
 
-  const generateTrendingHashtags = () => {
-    const hashtags = [
-      { tag: '#photography', posts: 2340000, category: 'Creative' },
-      { tag: '#travel', posts: 1890000, category: 'Lifestyle' },
-      { tag: '#food', posts: 3210000, category: 'Lifestyle' },
-      { tag: '#fitness', posts: 1560000, category: 'Health' },
-      { tag: '#art', posts: 987000, category: 'Creative' },
-      { tag: '#nature', posts: 2100000, category: 'Nature' },
-      { tag: '#technology', posts: 876000, category: 'Tech' },
-      { tag: '#fashion', posts: 1430000, category: 'Style' },
-      { tag: '#music', posts: 1200000, category: 'Entertainment' },
-      { tag: '#motivation', posts: 890000, category: 'Inspiration' }
-    ];
-    setTrendingHashtags(hashtags);
+  const generateTrendingHashtags = async () => {
+    try {
+      // Get all posts to extract hashtags
+      const allPosts = await postAPI.getAllPosts();
+      const posts = allPosts.data.posts || [];
+      
+      // Extract hashtags from post captions and calculate counts
+      const hashtagCounts = {};
+      posts.forEach(post => {
+        if (post.caption) {
+          const hashtags = post.caption.match(/#\w+/g) || [];
+          hashtags.forEach(tag => {
+            const normalizedTag = tag.toLowerCase();
+            hashtagCounts[normalizedTag] = (hashtagCounts[normalizedTag] || 0) + 1;
+          });
+        }
+      });
+
+      // Convert to hashtag format and sort by count
+      const hashtags = Object.entries(hashtagCounts)
+        .map(([tag, count]) => ({
+          tag,
+          posts: count,
+          category: getCategoryForHashtag(tag)
+        }))
+        .sort((a, b) => b.posts - a.posts)
+        .slice(0, 10);
+
+      // If no hashtags found, return empty array
+      if (hashtags.length === 0) {
+        return [];
+      }
+
+      return hashtags;
+    } catch (error) {
+      console.error('Error generating trending hashtags:', error);
+      return [];
+    }
+  };
+
+  const getCategoryForHashtag = (tag) => {
+    const tagLower = tag.toLowerCase();
+    if (tagLower.includes('photo') || tagLower.includes('art') || tagLower.includes('design')) return 'Creative';
+    if (tagLower.includes('food') || tagLower.includes('recipe') || tagLower.includes('cooking')) return 'Lifestyle';
+    if (tagLower.includes('travel') || tagLower.includes('vacation') || tagLower.includes('trip')) return 'Lifestyle';
+    if (tagLower.includes('tech') || tagLower.includes('code') || tagLower.includes('programming')) return 'Tech';
+    if (tagLower.includes('fitness') || tagLower.includes('health') || tagLower.includes('workout')) return 'Health';
+    if (tagLower.includes('lifestyle') || tagLower.includes('life') || tagLower.includes('daily')) return 'Lifestyle';
+    if (tagLower.includes('nature') || tagLower.includes('outdoor') || tagLower.includes('environment')) return 'Nature';
+    if (tagLower.includes('fashion') || tagLower.includes('style') || tagLower.includes('outfit')) return 'Style';
+    if (tagLower.includes('music') || tagLower.includes('song') || tagLower.includes('artist')) return 'Entertainment';
+    if (tagLower.includes('motivation') || tagLower.includes('inspire') || tagLower.includes('quote')) return 'Inspiration';
+    return 'General';
   };
 
   // Search functionality
