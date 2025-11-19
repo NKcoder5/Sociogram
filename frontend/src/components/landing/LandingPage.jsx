@@ -92,39 +92,14 @@ const LandingPage = () => {
     }
   ];
 
-  // Dynamic tech stack based on environment and package.json
-  const getTechStack = () => {
-    const stack = [];
-    
-    // Add core technologies dynamically
-    if (typeof React !== 'undefined') {
-      stack.push({ name: "React", icon: <Zap className="w-5 h-5" /> });
-    }
-    
-    // Add based on environment variables or features
-    if (import.meta.env.VITE_SOCKET_URL || window.io) {
-      stack.push({ name: "Socket.io", icon: <Globe className="w-5 h-5" /> });
-    }
-    
-    if (import.meta.env.VITE_DATABASE_URL || import.meta.env.VITE_API_URL) {
-      stack.push({ name: "PostgreSQL", icon: <Shield className="w-5 h-5" /> });
-    }
-    
-    if (import.meta.env.VITE_CLOUDINARY_CLOUD_NAME) {
-      stack.push({ name: "Cloudinary", icon: <Image className="w-5 h-5" /> });
-    }
-    
-    if (import.meta.env.VITE_AI_API_KEY) {
-      stack.push({ name: "AI Integration", icon: <Bot className="w-5 h-5" /> });
-    }
-    
-    // Always include ORM as it's core to the app
-    stack.push({ name: "Prisma ORM", icon: <Sparkles className="w-5 h-5" /> });
-    
-    return stack;
-  };
-
-  const techStack = getTechStack();
+  const techStack = [
+    { name: "React 18", icon: <Zap className="w-5 h-5" /> },
+    { name: "Socket.io", icon: <Globe className="w-5 h-5" /> },
+    { name: "PostgreSQL", icon: <Shield className="w-5 h-5" /> },
+    { name: "Cloudinary", icon: <Image className="w-5 h-5" /> },
+    { name: "NVIDIA AI", icon: <Bot className="w-5 h-5" /> },
+    { name: "Prisma ORM", icon: <Sparkles className="w-5 h-5" /> }
+  ];
 
   const stats = [
     { number: "Real-time", label: "Message Delivery", icon: <Send className="w-6 h-6" /> },

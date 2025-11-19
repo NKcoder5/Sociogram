@@ -1,5 +1,5 @@
 import express from "express";
-import {editProfile,followOrUnfollow,getProfile,getProfileByUsername,getSuggestedUsers,login,logout,register,getFollowers,getFollowing,uploadProfilePicture,firebaseAuth} from "../controllers/user.controller.js";
+import {editProfile,followOrUnfollow,getProfile,getProfileByUsername,getSuggestedUsers,login,logout,register,getFollowers,getFollowing,uploadProfilePicture,firebaseAuth,getMutualConnections} from "../controllers/user.controller.js";
 import isAuthenticated from "../middlewares/isAuthenticated.js";
 import upload from "../middlewares/multer.js";
 
@@ -19,6 +19,7 @@ router.get('/profile/username/:username', isAuthenticated, getProfileByUsername)
 router.post('/profile/edit', isAuthenticated, upload.single('profilePicture'), editProfile);
 router.post('/profile/picture', isAuthenticated, upload.single('profilePicture'), uploadProfilePicture);
 router.get('/suggested', isAuthenticated, getSuggestedUsers);
+router.get('/mutual-connections', isAuthenticated, getMutualConnections);
 router.post('/followorunfollow/:id', isAuthenticated, followOrUnfollow);
 router.get('/:id/followers', isAuthenticated, getFollowers);
 router.get('/:id/following', isAuthenticated, getFollowing);

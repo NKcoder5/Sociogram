@@ -35,144 +35,85 @@ const Reels = () => {
   const touchEndY = useRef(0);
 
   useEffect(() => {
-    const fetchReels = async () => {
-      try {
-        setLoading(true);
-        
-        // Try to get video posts from the API
-        const postsResponse = await postAPI.getAllPosts();
-        const allPosts = postsResponse.data.posts || [];
-        
-        // Filter for video posts (if any) or convert image posts to reels format
-        const videoPosts = allPosts.filter(post => 
-          post.image && (
-            post.image.includes('.mp4') || 
-            post.image.includes('.webm') || 
-            post.image.includes('.mov')
-          )
-        );
-        
-        // Create reels from available posts
-        let reelsData = [];
-        
-        // First try to get video posts
-        if (videoPosts.length > 0) {
-          reelsData = videoPosts.map(post => ({
-            id: post.id,
-            user: {
-              username: post.author?.username || 'Unknown User',
-              profilePicture: post.author?.profilePicture || null
-            },
-            video: post.image,
-            isVideo: true,
-            caption: post.caption || 'Check out this amazing content!',
-            likes: post.likes?.length || 0,
-            comments: post.comments?.length || 0,
-            isLiked: false,
-            isBookmarked: false,
-            music: 'Original Audio'
-          }));
-        } else {
-          // Add sample videos when no real videos exist
-          reelsData = [
-            {
-              id: 'sample-1',
-              user: {
-                username: 'demo_user',
-                profilePicture: null
-              },
-              video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-              isVideo: true,
-              caption: 'Amazing nature video! 🌅 #nature #beautiful',
-              likes: 1234,
-              comments: 89,
-              isLiked: false,
-              isBookmarked: false,
-              music: 'Nature Sounds'
-            },
-            {
-              id: 'sample-2',
-              user: {
-                username: 'content_creator',
-                profilePicture: null
-              },
-              video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-              isVideo: true,
-              caption: 'Creative content for you! 🎨 #creative #art',
-              likes: 2156,
-              comments: 145,
-              isLiked: true,
-              isBookmarked: false,
-              music: 'Creative Vibes'
-            },
-            {
-              id: 'sample-3',
-              user: {
-                username: 'video_maker',
-                profilePicture: null
-              },
-              video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-              isVideo: true,
-              caption: 'Check out this amazing video! 🔥 #trending #viral',
-              likes: 3421,
-              comments: 234,
-              isLiked: false,
-              isBookmarked: true,
-              music: 'Trending Audio'
-            }
-          ];
-        }
-        
-        // If we still have fewer than 3 reels, add image posts as moving pictures
-        if (reelsData.length < 3) {
-          const imagePosts = allPosts
-            .filter(post => post.image && !post.image.includes('.mp4') && !post.image.includes('.webm') && !post.image.includes('.mov'))
-            .slice(0, 5 - reelsData.length);
-            
-          const imageReels = imagePosts.map(post => ({
-            id: post.id,
-            user: {
-              username: post.author?.username || 'Unknown User',
-              profilePicture: post.author?.profilePicture || null
-            },
-            image: post.image,
-            isVideo: false,
-            caption: post.caption || 'Check out this amazing content!',
-            likes: post.likes?.length || 0,
-            comments: post.comments?.length || 0,
-            isLiked: false,
-            isBookmarked: false,
-            music: 'Original Audio'
-          }));
-          
-          reelsData = [...reelsData, ...imageReels];
-        }
-        
-        setReels(reelsData);
-      } catch (error) {
-        console.error('Error fetching reels:', error);
-        setReels([]);
-      } finally {
-        setLoading(false);
+    // Mock reels data
+    setReels([
+      {
+        id: 1,
+        user: { username: 'travel_enthusiast', profilePicture: null },
+        video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        caption: 'Amazing sunset at the beach! 🌅 #travel #sunset',
+        likes: 1234,
+        comments: 89,
+        isLiked: false,
+        isBookmarked: false,
+        music: 'Original Audio'
+      },
+      {
+        id: 2,
+        user: { username: 'food_lover', profilePicture: null },
+        video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        caption: 'Delicious homemade pasta recipe! 🍝 #food #cooking',
+        likes: 2156,
+        comments: 145,
+        isLiked: true,
+        isBookmarked: false,
+        music: 'Cooking Vibes - Artist'
+      },
+      {
+        id: 3,
+        user: { username: 'fitness_guru', profilePicture: null },
+        video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        caption: 'Morning workout routine 💪 #fitness #workout',
+        likes: 3421,
+        comments: 234,
+        isLiked: false,
+        isBookmarked: true,
+        music: 'Workout Beats - Gym Mix'
+      },
+      {
+        id: 4,
+        user: { username: 'nature_lover', profilePicture: null },
+        video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+        caption: 'Exploring the wilderness 🌲 #nature #adventure',
+        likes: 2890,
+        comments: 167,
+        isLiked: false,
+        isBookmarked: false,
+        music: 'Nature Sounds - Ambient'
+      },
+      {
+        id: 5,
+        user: { username: 'tech_guru', profilePicture: null },
+        video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+        caption: 'Latest tech trends! 📱 #tech #innovation',
+        likes: 4567,
+        comments: 298,
+        isLiked: true,
+        isBookmarked: true,
+        music: 'Electronic Beats - Techno'
+      },
+      {
+        id: 6,
+        user: { username: 'art_creator', profilePicture: null },
+        video: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4',
+        caption: 'Creating digital art ✨ #art #digital',
+        likes: 1876,
+        comments: 134,
+        isLiked: false,
+        isBookmarked: false,
+        music: 'Chill Vibes - Lo-fi'
       }
-    };
-
-    fetchReels();
+    ]);
+    setLoading(false);
   }, []);
 
   // Enhanced video management
   useEffect(() => {
-    const currentReel = reels[currentIndex];
     const currentVideo = videoRefs.current[currentIndex];
-    
-    // Only handle video elements for actual video reels
-    if (currentVideo && currentReel?.isVideo) {
+    if (currentVideo) {
       currentVideo.muted = isMuted;
       if (isPlaying) {
-        currentVideo.play().catch(error => {
-          console.log('Video play failed:', error);
-          // Don't show error for image reels
-        });
+        currentVideo.play().catch(console.error);
       } else {
         currentVideo.pause();
       }
@@ -180,12 +121,12 @@ const Reels = () => {
 
     // Pause other videos
     videoRefs.current.forEach((video, index) => {
-      if (video && index !== currentIndex && reels[index]?.isVideo) {
+      if (video && index !== currentIndex) {
         video.pause();
         video.currentTime = 0;
       }
     });
-  }, [currentIndex, isPlaying, isMuted, reels]);
+  }, [currentIndex, isPlaying, isMuted]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -333,54 +274,19 @@ const Reels = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen bg-black">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Loading Reels...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (reels.length === 0) {
-    return (
-      <div className="flex justify-center items-center h-screen bg-black">
-        <div className="text-white text-center">
-          <div className="text-6xl mb-4">📱</div>
-          <h2 className="text-xl font-semibold mb-2">No Reels Available</h2>
-          <p className="text-gray-400">Check back later for new content!</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
       </div>
     );
   }
 
   return (
-    <>
-      <style>{`
-        @keyframes ken-burns {
-          0% { 
-            transform: scale(1.0) translate(0%, 0%); 
-          }
-          25% { 
-            transform: scale(1.05) translate(-1%, 1%); 
-          }
-          50% { 
-            transform: scale(1.08) translate(1%, -1%); 
-          }
-          75% { 
-            transform: scale(1.06) translate(-0.5%, 0.5%); 
-          }
-          100% { 
-            transform: scale(1.1) translate(0.5%, -0.5%); 
-          }
-        }
-      `}</style>
-      <div 
-        ref={containerRef}
-        className="relative h-screen bg-black overflow-hidden"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
+    <div 
+      ref={containerRef}
+      className="relative h-screen bg-black overflow-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Progress bar */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gray-800 z-50">
         <div 
@@ -414,14 +320,13 @@ const Reels = () => {
             index < currentIndex ? '-translate-y-full' : 'translate-y-full'
           }`}
         >
-          {/* Video or Image */}
-          {reel.isVideo ? (
-            <video
-              ref={el => videoRefs.current[index] = el}
-              src={reel.video}
-              className="w-full h-full object-cover cursor-pointer"
-              loop
-              muted={isMuted}
+          {/* Video */}
+          <video
+            ref={el => videoRefs.current[index] = el}
+            src={reel.video}
+            className="w-full h-full object-cover cursor-pointer"
+            loop
+            muted={isMuted}
             playsInline
             onClick={handleVideoClick}
             onTimeUpdate={() => handleVideoProgress(index)}
@@ -430,24 +335,10 @@ const Reels = () => {
                 videoRefs.current[index]?.play().catch(console.error);
               }
             }}
-            />
-          ) : (
-            <div className="relative w-full h-full overflow-hidden">
-              <img
-                src={reel.image}
-                alt={reel.caption}
-                className="w-full h-full object-cover cursor-pointer transform transition-transform duration-1000 hover:scale-110"
-                onClick={handleVideoClick}
-                style={{
-                  animation: 'ken-burns 10s ease-in-out infinite alternate',
-                  animationDelay: `${index * 0.5}s`
-                }}
-              />
-            </div>
-          )}
+          />
 
-          {/* Play/Pause overlay - only for videos */}
-          {!isPlaying && index === currentIndex && reel.isVideo && (
+          {/* Play/Pause overlay */}
+          {!isPlaying && index === currentIndex && (
             <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
               <div className="bg-white bg-opacity-20 rounded-full p-4">
                 <PlayIcon className="w-12 h-12 text-white" />
@@ -484,21 +375,19 @@ const Reels = () => {
 
             {/* Right side - action buttons */}
             <div className="action-buttons w-16 flex flex-col justify-end items-center pb-20 space-y-6">
-              {/* Mute/Unmute button - only for videos */}
-              {reel.isVideo && (
-                <div className="flex flex-col items-center">
-                  <button
-                    onClick={toggleMute}
-                    className="text-white mb-1 hover:scale-110 transition-all duration-200 bg-black bg-opacity-30 rounded-full p-2"
-                  >
-                    {isMuted ? (
-                      <SpeakerXMarkIcon className="w-6 h-6" />
-                    ) : (
-                      <SpeakerWaveIcon className="w-6 h-6" />
-                    )}
-                  </button>
-                </div>
-              )}
+              {/* Mute/Unmute button */}
+              <div className="flex flex-col items-center">
+                <button
+                  onClick={toggleMute}
+                  className="text-white mb-1 hover:scale-110 transition-all duration-200 bg-black bg-opacity-30 rounded-full p-2"
+                >
+                  {isMuted ? (
+                    <SpeakerXMarkIcon className="w-6 h-6" />
+                  ) : (
+                    <SpeakerWaveIcon className="w-6 h-6" />
+                  )}
+                </button>
+              </div>
 
               {/* Like button */}
               <div className="flex flex-col items-center">
@@ -573,18 +462,18 @@ const Reels = () => {
           </div>
 
           {/* Enhanced Navigation buttons */}
-          {index > 0 && (
+          {currentIndex > 0 && (
             <button
               onClick={() => handleScroll('up')}
-              className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-black bg-opacity-30 rounded-full p-2 text-white hover:bg-opacity-50 transition-all duration-200"
+              className="absolute top-1/2 left-4 transform -translate-y-12 bg-black bg-opacity-50 rounded-full p-3 text-white hover:bg-opacity-70 transition-all duration-200 z-40"
             >
               <ArrowUpIcon className="w-6 h-6" />
             </button>
           )}
-          {index < reels.length - 1 && (
+          {currentIndex < reels.length - 1 && (
             <button
               onClick={() => handleScroll('down')}
-              className="absolute bottom-1/2 left-4 transform translate-y-1/2 bg-black bg-opacity-30 rounded-full p-2 text-white hover:bg-opacity-50 transition-all duration-200"
+              className="absolute top-1/2 left-4 transform translate-y-12 bg-black bg-opacity-50 rounded-full p-3 text-white hover:bg-opacity-70 transition-all duration-200 z-40"
             >
               <ArrowDownIcon className="w-6 h-6" />
             </button>
@@ -610,7 +499,6 @@ const Reels = () => {
         />
       )}
     </div>
-    </>
   );
 };
 

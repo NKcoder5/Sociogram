@@ -241,17 +241,79 @@ export const editProfile=async(req,res)=>{
             success:true,
             user: updatedUser
         });
-
-    } catch (error) {
+    } catch(error){
         console.log(error);
+        return res.status(500).json({
+            message:'Internal server error',
+            success:false
+        });
     }
 };
-export const getSuggestedUsers=async(req,res)=>{
-    try{
-        const suggestedUsers=await prisma.user.findMany({
-            where: {id: {not: req.id}},
-            select: {id: true, username: true, profilePicture: true, bio: true},
-            take: 10
+
+// Get mutual connections (users who follow each other)
+export const getMutualConnections = async (req, res) => {
+    try {
+        const userId = req.id;
+        
+        console.log('🤝 Getting mutual connections for user:', userId);
+        
+        // Get users that the current user follows
+        const following = await prisma.follow.findMany({
+            where: { followerId: userId },
+            include: {
+                following: {
+                    select: {
+                        id: true,
+                        username: true,
+                        profilePicture: true,
+                        bio: true
+                    }
+                }
+            }
+        });
+        
+        // Filter for mutual connections (users who also follow back)
+        const mutualConnections = [];
+        
+        for (const follow of following) {
+            const followsBack = await prisma.follow.findUnique({
+                where: {
+                    followerId_followingId: {
+                        followerId: follow.followingId,
+                        followingId: userId
+                    }
+                }
+            });
+            
+            if (followsBack) {
+                mutualConnections.push(follow.following);
+            }
+        }
+        
+        console.log('🤝 Found mutual connections:', mutualConnections.length);
+        
+        return res.status(200).json({
+            success: true,
+            mutualConnections
+        });
+        
+    } catch (error) {
+        console.error('❌ Error getting mutual connections:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error'
+        });
+    }
+};
+
+export const getSuggestedUsers = async (req, res) => {
+    try {
+        const suggestedUsers = await prisma.user.findMany({
+            select: {
+                id: true,
+                username: true,
+                profilePicture: true
+            }
         });
         if(!suggestedUsers){
             return res.status(400).json({

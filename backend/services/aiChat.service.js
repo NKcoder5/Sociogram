@@ -6,8 +6,14 @@ class AIChatService {
     this.model = process.env.NVIDIA_MODEL || 'microsoft/phi-3-mini-128k-instruct';
   }
 
-  async generateResponse(message, conversationHistory = [], userContext = {}) {
-    console.log('AI Chat Request:', { message, userContext });
+  async generateResponse(message, conversationHistory = [], userContext = {}, customSystemPrompt = null) {
+    console.log('🤖 AI Chat Request:', { 
+      message: message.substring(0, 50) + '...', 
+      userContext, 
+      hasCustomPrompt: !!customSystemPrompt,
+      apiKeyPresent: !!process.env.NVIDIA_API_KEY,
+      apiKeyLength: process.env.NVIDIA_API_KEY?.length || 0
+    });
     
     // Try the NVIDIA API with the new key
     try {
@@ -21,7 +27,7 @@ class AIChatService {
         };
       }
 
-      const systemPrompt = this.buildSystemPrompt(userContext);
+      const systemPrompt = customSystemPrompt || this.buildSystemPrompt(userContext);
       const messages = this.buildMessageHistory(systemPrompt, conversationHistory, message);
 
       const response = await axios.post(`${this.baseURL}/chat/completions`, {
@@ -52,9 +58,11 @@ class AIChatService {
       console.error('AI Chat Service Error (falling back):', payload);
       
       // Always return a successful fallback response
+      const fallbackResponse = this.getFallbackResponse(message);
+      console.log('🔄 Using fallback response:', fallbackResponse.substring(0, 50) + '...');
       return {
         success: true,
-        response: this.getFallbackResponse(message),
+        response: fallbackResponse,
         usage: null,
         fallback: true,
         error: `API unavailable (${status || 'network error'})`
@@ -76,6 +84,22 @@ User context:
 - Username: ${userContext.username || 'User'}
 - Platform: Social Media Messaging
 - Features available: File sharing, voice messages, video calls
+
+SOCIOGRAM FEATURES YOU CAN HELP WITH:
+- Feed: Viewing and interacting with posts in the main timeline
+- Messages: Chatting with friends, AI features in the messaging system
+- Stories: Creating and viewing 24-hour stories at the top of the feed
+- Reels: Short video content for entertainment
+- Profile: User profiles and account settings
+- Activity: Notifications and user interactions
+- Explore: Discovering new content and users
+- Create: Making new posts using the CREATE button in the LEFT SIDEBAR (not at the top!)
+
+IMPORTANT NAVIGATION DETAILS:
+- The CREATE button is located in the LEFT SIDEBAR, not at the top of the screen
+- The sidebar contains: Feed, Messages, Create, Reels, Activity, Profile
+- To create a post: Click the "Create" button in the left sidebar navigation
+- The main navigation is always on the left side of the screen
 
 Guidelines:
 - Keep responses conversational and natural
@@ -112,35 +136,75 @@ Guidelines:
   getFallbackResponse(message) {
     const lowerMessage = message.toLowerCase();
     
+    // Sociogram-specific responses
+    if (lowerMessage.includes('post') || lowerMessage.includes('create')) {
+      return "To create a post, click the 'Create' button in the LEFT SIDEBAR! 📝 You can add photos, write captions, and share with your friends. The Create button is in the sidebar navigation, not at the top. Want me to guide you through it? 😊";
+    }
+    
+    if (lowerMessage.includes('message') || lowerMessage.includes('chat')) {
+      return "You can send messages by going to the Messages tab! 💬 Click on any friend to start chatting, or use the AI chat feature for smart assistance! ✨";
+    }
+    
+    if (lowerMessage.includes('story') || lowerMessage.includes('stories')) {
+      return "Stories are 24-hour posts that disappear! 📸 You can create them from the Stories section - perfect for sharing quick moments with friends! 🌟";
+    }
+    
+    if (lowerMessage.includes('friend') || lowerMessage.includes('follow')) {
+      return "Find friends in the Explore tab! 👥 You can search for people, see suggested users, and follow them to see their posts in your feed! 🔍";
+    }
+    
+    if (lowerMessage.includes('reel') || lowerMessage.includes('video')) {
+      return "Reels are short videos! 🎬 Check out the Reels tab to watch fun content, or create your own to share with everyone! 🎥";
+    }
+    
+    if (lowerMessage.includes('navigate') || lowerMessage.includes('navigation')) {
+      return "Here's how to navigate Sociogram: 🧭\n• Feed - See posts from friends\n• Messages - Chat with people\n• Create - Make new posts (LEFT SIDEBAR!)\n• Reels - Watch videos\n• Activity - See notifications\n• Profile - Your account!\n\nAll navigation buttons are in the LEFT SIDEBAR, not at the top! 😊";
+    }
+    
     // Context-aware responses
     if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
-      return "Hello! 👋 Nice to meet you! How are you doing today?";
+      return "Hello there! 👋 I'm Sparkle, your friendly Sociogram assistant! How can I make your social experience amazing today? ✨";
     }
     
     if (lowerMessage.includes('how are you')) {
-      return "I'm doing great, thank you for asking! 😊 How about you?";
+      return "I'm doing fantastic, thank you for asking! 😊 I'm here and ready to help you with anything Sociogram-related! How are you enjoying the app? 🌟";
     }
     
     if (lowerMessage.includes('help')) {
-      return "I'd be happy to help you! 🤝 What do you need assistance with?";
+      return "I'd love to help you! 🤝 I can assist with:\n• App navigation 🧭\n• Creating posts 📝\n• Finding friends 👥\n• Using features 🎯\n• General questions 💭\nWhat would you like to know? 😊";
     }
     
     if (lowerMessage.includes('thank')) {
-      return "You're very welcome! 😊 Is there anything else I can help you with?";
+      return "Aww, you're so welcome! 😊 It makes me happy to help! Is there anything else about Sociogram I can explain? I'm always here for you! 💫";
+    }
+    
+    if (lowerMessage.includes('inappropriate') || lowerMessage.includes('hack') || lowerMessage.includes('spam')) {
+      return "I appreciate you reaching out, but I can't help with that! 😅 I'm here to make your Sociogram experience positive and fun! Let's focus on something awesome instead! ✨";
     }
     
     if (lowerMessage.includes('?')) {
-      return "That's a great question! 🤔 Let me think about that for you.";
+      return "That's a great question! 🤔 I love curious minds! While I might not have all the answers, I'm here to help with Sociogram features and general questions. What's on your mind? 💭";
     }
     
-    // Default fallbacks
+    // Fun responses
+    if (lowerMessage.includes('fun fact') || lowerMessage.includes('joke')) {
+      const funFacts = [
+        "Fun fact: The average person checks social media 96 times per day! 📱 But with Sociogram's engaging features, that time is well spent! 😄",
+        "Did you know? Emojis were invented in 1999! 😊 Now we use them to express emotions in every message! 🎉",
+        "Fun fact: The first social media site was Six Degrees in 1997! 🌐 Look how far we've come with Sociogram! ✨",
+        "Here's something cool: Your brain releases dopamine when you get likes and comments! 💖 That's why Sociogram feels so good to use! 😊"
+      ];
+      return funFacts[Math.floor(Math.random() * funFacts.length)];
+    }
+    
+    // Default friendly fallbacks
     const fallbacks = [
-      "I'm here to help! Could you tell me more about what you need? 😊",
-      "That's interesting! What would you like to know more about? 🤔",
-      "I'd be happy to assist you with that. Can you provide more details? 💭",
-      "Thanks for reaching out! How can I help you today? 👋",
-      "I'm listening! What's on your mind? 💬",
-      "Great to chat with you! What brings you here today? ✨"
+      "I'm here to help make your Sociogram experience amazing! 🌟 What can I assist you with today? 😊",
+      "That's interesting! 🤔 I'd love to help you with that! Can you tell me more about what you need? 💭",
+      "Great to chat with you! 💬 I'm your friendly Sociogram assistant - how can I make your day better? ✨",
+      "I'm all ears! 👂 Whether it's about app features or just a friendly chat, I'm here for you! 😊",
+      "Thanks for reaching out! 👋 I love helping users navigate Sociogram and have fun! What's up? 🎉",
+      "You've got my attention! 💫 I'm here to help with anything Sociogram-related or just be a friendly companion! 😄"
     ];
     
     return fallbacks[Math.floor(Math.random() * fallbacks.length)];

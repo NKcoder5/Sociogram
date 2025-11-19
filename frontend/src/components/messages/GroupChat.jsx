@@ -39,20 +39,56 @@ const GroupChat = ({
 
   const loadFollowedUsers = async () => {
     try {
-      const response = await authAPI.getFollowing(user.id);
-      if (response.data.success) {
-        setFollowedUsers(response.data.following || []);
-      }
-    } catch (error) {
-      console.error('Error loading followed users:', error);
-      // Mock data for demo
-      setFollowedUsers([
-        { id: '1', username: 'alex_dev' },
-        { id: '2', username: 'sarah_designer' },
-        { id: '3', username: 'mike_tech' },
-        { id: '4', username: 'emma_writer' },
-        { id: '5', username: 'john_creator' }
+      console.log('🔍 Loading followers and following for group creation...');
+      
+      // Get both followers and following users
+      const [followingResponse, followersResponse] = await Promise.all([
+        authAPI.getFollowing(user.id),
+        authAPI.getFollowers(user.id)
       ]);
+      
+      console.log('📊 Following response:', followingResponse.data);
+      console.log('📊 Followers response:', followersResponse.data);
+      
+      const availableUsers = new Map(); // Use Map to avoid duplicates
+      
+      // Add users that the current user follows
+      if (followingResponse.data.success && followingResponse.data.following) {
+        followingResponse.data.following.forEach(followedUser => {
+          if (followedUser.id !== user.id) {
+            availableUsers.set(followedUser.id, {
+              ...followedUser,
+              relationship: 'following'
+            });
+          }
+        });
+      }
+      
+      // Add users that follow the current user
+      if (followersResponse.data.success && followersResponse.data.followers) {
+        followersResponse.data.followers.forEach(follower => {
+          if (follower.id !== user.id) {
+            const existing = availableUsers.get(follower.id);
+            availableUsers.set(follower.id, {
+              ...follower,
+              relationship: existing ? 'mutual' : 'follower'
+            });
+          }
+        });
+      }
+      
+      const usersList = Array.from(availableUsers.values());
+      console.log('👥 Available users for group:', usersList.length);
+      console.log('👥 Breakdown:', {
+        mutual: usersList.filter(u => u.relationship === 'mutual').length,
+        following: usersList.filter(u => u.relationship === 'following').length,
+        followers: usersList.filter(u => u.relationship === 'follower').length
+      });
+      
+      setFollowedUsers(usersList);
+    } catch (error) {
+      console.error('❌ Error loading users:', error);
+      setFollowedUsers([]);
     }
   };
 
@@ -81,23 +117,9 @@ const GroupChat = ({
       }
       
     } catch (error) {
-      console.error('Error creating group:', error);
-      // Fallback: create mock group for demo
-      const newGroup = {
-        _id: Date.now().toString(),
-        groupName: groupName.trim(),
-        groupDescription: groupDescription.trim(),
-        isGroupChat: true,
-        participants: [
-          { user: { id: user.id, username: user.username } },
-          ...selectedUsers.map(u => ({ user: u }))
-        ],
-        createdAt: new Date().toISOString(),
-        groupOwner: { id: user.id, username: user.username }
-      };
-
-      onGroupCreate(newGroup);
-      resetForm();
+      console.error('❌ Error creating group:', error);
+      alert('Failed to create group. Please try again.');
+      // Don't create mock groups - show proper error handling
     } finally {
       setLoading(false);
     }
@@ -214,15 +236,48 @@ const GroupChat = ({
                           {user.username?.charAt(0).toUpperCase()}
                         </span>
                       </div>
-                      <div>
+                      <div className="flex-1">
                         <p className="font-medium text-gray-900">{user.username}</p>
                         <p className="text-sm text-gray-600">@{user.username}</p>
+                      </div>
+                      <div className="flex items-center">
+                        {user.relationship === 'mutual' && (
+                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-medium">
+                            🤝 Mutual
+                          </span>
+                        )}
+                        {user.relationship === 'following' && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                            👤 Following
+                          </span>
+                        )}
+                        {user.relationship === 'follower' && (
+                          <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full font-medium">
+                            👥 Follower
+                          </span>
+                        )}
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="p-4 text-center text-gray-500">
-                    {searchTerm ? 'No users found' : 'No followed users available'}
+                  <div className="p-6 text-center text-gray-500">
+                    <UserPlusIcon className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    {searchTerm ? (
+                      <div>
+                        <p className="font-medium">No users found</p>
+                        <p className="text-sm">Try a different search term</p>
+                      </div>
+                    ) : followedUsers.length === 0 ? (
+                      <div>
+                        <p className="font-medium">No connections available</p>
+                        <p className="text-sm">Follow users or get followers to add them to groups</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="font-medium">All users selected</p>
+                        <p className="text-sm">You've added everyone from your connections</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

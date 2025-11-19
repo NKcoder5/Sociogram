@@ -777,7 +777,14 @@ export const uploadMessageFile = async (req, res) => {
 export const aiChatAssistant = async (req, res) => {
     try {
         const userId = req.id;
-        const { message, conversationId } = req.body;
+        const { message, conversationId, systemPrompt } = req.body;
+        
+        console.log('🤖 AI Chat Assistant Request:', {
+            userId,
+            message: message?.substring(0, 50) + '...',
+            conversationId,
+            hasSystemPrompt: !!systemPrompt
+        });
 
         // Get user context
         const user = await prisma.user.findUnique({
@@ -801,7 +808,32 @@ export const aiChatAssistant = async (req, res) => {
             }));
         }
 
-        // Ensure AI conversation exists
+        // For floating assistant, don't persist messages in database
+        // Just generate AI response directly
+        const aiResponse = await aiChatService.generateResponse(
+            message, 
+            conversationHistory, 
+            { username: user.username, bio: user.bio },
+            systemPrompt
+        );
+        const aiText = aiResponse.success ? aiResponse.response : aiResponse.fallbackResponse || "I'm here to help! Could you tell me more about what you need? 😊";
+
+        // For floating assistant (conversationId: 'floating-assistant'), don't create database entries
+        if (conversationId === 'floating-assistant') {
+            console.log('🤖 Floating Assistant Response:', {
+                success: true,
+                responseLength: aiText?.length || 0,
+                response: aiText?.substring(0, 100) + '...'
+            });
+            return res.status(200).json({ 
+                success: true, 
+                response: aiText, 
+                usage: aiResponse.usage || null, 
+                conversationId: 'floating-assistant' 
+            });
+        }
+
+        // For regular AI conversations, ensure conversation exists and persist messages
         let aiConversationId = conversationId;
         if (!aiConversationId) {
             const existing = await prisma.conversation.findFirst({
@@ -824,16 +856,12 @@ export const aiChatAssistant = async (req, res) => {
             }
         }
 
-        // Persist user's message
+        // Persist user's message for regular AI conversations
         const userMsg = await prisma.message.create({
             data: { content: message, senderId: userId, receiverId: null, conversationId: aiConversationId, messageType: 'text' }
         });
 
-        // Generate AI response
-        const aiResponse = await aiChatService.generateResponse(message, conversationHistory, { username: user.username, bio: user.bio });
-        const aiText = aiResponse.success ? aiResponse.response : aiResponse.fallbackResponse;
-
-        // Persist AI message
+        // Persist AI message for regular AI conversations
         const aiMsg = await prisma.message.create({
             data: { content: aiText, senderId: userId, receiverId: null, conversationId: aiConversationId, messageType: 'text', isAI: true }
         });

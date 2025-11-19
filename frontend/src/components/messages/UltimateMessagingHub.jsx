@@ -88,6 +88,7 @@ const UltimateMessagingHub = () => {
   const [followedUsers, setFollowedUsers] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [aiMessages, setAiMessages] = useState([]); // Separate state for AI messages
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('conversations');
@@ -275,56 +276,55 @@ const UltimateMessagingHub = () => {
 
   const loadInitialData = async () => {
     try {
+      console.log('🔄 Loading initial conversations and data...');
       const [conversationsRes, followedRes] = await Promise.all([
         messageAPI.getConversations(),
         authAPI.getFollowing(user.id)
       ]);
       
+      console.log('📊 Conversations API response:', conversationsRes.data);
+      console.log('📊 Following API response:', followedRes.data);
+      
       // Deduplicate conversations by ID
       const uniqueConversations = (conversationsRes.data.conversations || []).filter((conv, index, self) => 
         index === self.findIndex(c => c.id === conv.id)
       );
+      
+      console.log('💬 Unique conversations loaded:', uniqueConversations.length);
+      console.log('💬 Conversation details:', uniqueConversations.map(c => ({
+        id: c.id,
+        isGroup: c.isGroup,
+        participants: c.participants?.length || 0,
+        lastMessage: c.lastMessage?.content || 'No messages'
+      })));
+      
       setConversations(uniqueConversations);
       setFollowedUsers(followedRes.data.following || []);
       
       // Load groups from conversations
       const groupConversations = uniqueConversations.filter(conv => conv.isGroup);
       setGroups(groupConversations);
+      
+      console.log('✅ Initial data loaded successfully');
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('❌ Error loading initial data:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadMessages = async (conversationId) => {
-    try {
-      const response = await messageAPI.getByConversation(conversationId);
-      const messages = response.data.messages || [];
-      
-      // Extract reactions from messages and set them in state
-      const reactions = {};
-      messages.forEach(message => {
-        if (message.reactions && Object.keys(message.reactions).length > 0) {
-          reactions[message.id] = message.reactions;
-        }
-      });
-      
-      console.log('📥 Loaded reactions from database:', reactions);
-      setMessageReactions(reactions);
-      setMessages(messages);
-      setTimeout(scrollToBottom, 100);
-    } catch (error) {
-      console.error('Error loading messages:', error);
-      setMessages([]);
-    }
-  };
-
   const handleNewMessage = (message) => {
-    console.log('Processing new message:', message);
+    console.log('📨 Processing new message:', message);
     
-    // Add message if it's for current conversation
-    if (message.conversationId === selectedConversation?.id) {
+    // Skip AI messages (they're handled separately)
+    if (selectedConversation?.isAI) {
+      console.log('🤖 Skipping socket message for AI conversation');
+      return;
+    }
+    
+    // Add message if it's for current conversation (and not AI)
+    if (message.conversationId === selectedConversation?.id && !selectedConversation?.isAI) {
       setMessages(prev => {
         // Check for duplicates by ID or temporary ID
         const isDuplicate = prev.find(m => 
@@ -410,7 +410,9 @@ const UltimateMessagingHub = () => {
   };
 
   const scrollToBottom = () => {
-    setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 50);
   };
 
   const handleTypingIndicator = (value) => {
@@ -578,17 +580,80 @@ const UltimateMessagingHub = () => {
     setAudioBlob(null);
   };
 
+  // Load messages for a conversation
+  const loadMessages = async (conversationId) => {
+    if (!conversationId) {
+      console.log('❌ No conversationId provided to loadMessages');
+      return;
+    }
+    
+    try {
+      console.log('📥 Loading messages for conversation:', conversationId);
+      const response = await messageAPI.getConversationMessages(conversationId);
+      console.log('📥 Raw API response:', response.data);
+      
+      if (response.data && response.data.success) {
+        const loadedMessages = response.data.messages || [];
+        console.log('📥 Loaded messages count:', loadedMessages.length);
+        console.log('📥 First few messages:', loadedMessages.slice(0, 3));
+        setMessages(loadedMessages);
+        
+        // Scroll to bottom after loading
+        setTimeout(() => scrollToBottom(), 100);
+      } else {
+        console.error('❌ Failed to load messages:', response.data?.message || 'Unknown error');
+        setMessages([]);
+      }
+    } catch (error) {
+      console.error('❌ Error loading messages:', error);
+      console.error('❌ Error details:', error.response?.data || error.message);
+      setMessages([]);
+    }
+  };
+
   const handleConversationSelect = (conversation) => {
-    // Leave previous conversation
-    if (selectedConversation?.id) {
+    console.log('🔄 Selecting conversation:', conversation);
+    
+    // Leave previous conversation (only for real conversations)
+    if (selectedConversation?.id && !selectedConversation.isAI) {
       leaveConversation(selectedConversation.id);
     }
     
     setSelectedConversation(conversation);
-    loadMessages(conversation.id);
     
-    // Join new conversation
-    joinConversation(conversation.id);
+    // Clear both message states when switching conversations
+    setMessages([]);
+    setAiMessages([]);
+    
+    if (conversation.isAI) {
+      // For AI conversations, don't load from backend or join socket rooms
+      console.log('🤖 Selected AI conversation');
+      
+      // Add welcome message for AI
+      const welcomeMessage = {
+        id: 'ai-welcome-' + Date.now(),
+        content: `Hello! 👋 I'm your AI assistant ready to help! What can I do for you today? 😊`,
+        senderId: 'ai',
+        conversationId: conversation.id,
+        createdAt: new Date().toISOString(),
+        sender: {
+          id: 'ai',
+          username: 'AI Assistant',
+          profilePicture: null
+        },
+        messageType: 'text'
+      };
+      
+      setTimeout(() => {
+        setAiMessages([welcomeMessage]);
+        scrollToBottom();
+      }, 100);
+    } else {
+      // For regular conversations, load messages and join socket room
+      console.log('💬 Selected regular conversation, loading messages...');
+      loadMessages(conversation.id);
+      joinConversation(conversation.id);
+    }
     
     // Close search modal
     setShowSearch(false);
@@ -830,35 +895,186 @@ const UltimateMessagingHub = () => {
         isOptimistic: true
       };
 
-      setMessages(prev => [...prev, optimisticMessage]);
+      // Add optimistic message to appropriate state
+      if (selectedConversation.isAI) {
+        setAiMessages(prev => [...prev, optimisticMessage]);
+        console.log('🤖 Added optimistic AI message');
+      } else {
+        setMessages(prev => [...prev, optimisticMessage]);
+        console.log('💬 Added optimistic user message');
+      }
+      
       setNewMessage('');
       setSelectedFile(null);
       setFilePreview(null);
       scrollToBottom();
 
-      // Send to backend
+      // Handle AI conversation
+      if (selectedConversation.isAI) {
+        console.log('🤖 Processing AI conversation');
+        console.log('🤖 Selected conversation:', selectedConversation);
+        console.log('🤖 Message content:', messageContent);
+        
+        try {
+          console.log('🤖 Sending AI message:', messageContent);
+          
+          const systemPrompt = `You are an AI assistant integrated into Sociogram's messaging system. 
+
+Your role:
+- Help users with conversations and messaging
+- Provide thoughtful, helpful responses
+- Be friendly and engaging
+- Answer questions about Sociogram features
+- Assist with writing and communication
+
+IMPORTANT NAVIGATION:
+- The CREATE button is in the LEFT SIDEBAR, not at the top
+- Main navigation is in the left sidebar: Feed, Messages, Create, Reels, Activity, Profile
+
+Keep responses conversational and helpful!`;
+
+          const aiResponse = await messageAPI.aiChatAssistant({
+            message: messageContent,
+            conversationId: 'floating-assistant', // Use the same ID as floating assistant
+            systemPrompt: systemPrompt
+          });
+
+          console.log('🤖 AI Response received:', aiResponse.data);
+          console.log('🤖 AI Response success:', aiResponse.data?.success);
+          console.log('🤖 AI Response content:', aiResponse.data?.response);
+
+          if (aiResponse.data && aiResponse.data.success && aiResponse.data.response) {
+            const aiMessage = {
+              id: Date.now() + 1,
+              content: aiResponse.data.response,
+              senderId: 'ai',
+              conversationId: selectedConversation.id,
+              createdAt: new Date().toISOString(),
+              sender: {
+                id: 'ai',
+                username: 'AI Assistant',
+                profilePicture: null
+              },
+              messageType: 'text'
+            };
+            setAiMessages(prev => [...prev.filter(msg => msg.id !== tempId), optimisticMessage, aiMessage]);
+            console.log('🤖 AI message added to state');
+          } else {
+            console.error('🚨 AI response invalid:', aiResponse.data);
+            // Add fallback message
+            const fallbackMessage = {
+              id: Date.now() + 1,
+              content: "I'm here to help! Could you tell me more about what you need? 😊",
+              senderId: 'ai',
+              conversationId: selectedConversation.id,
+              createdAt: new Date().toISOString(),
+              sender: { id: 'ai', username: 'AI Assistant' },
+              messageType: 'text'
+            };
+            setAiMessages(prev => [...prev.filter(msg => msg.id !== tempId), optimisticMessage, fallbackMessage]);
+          }
+        } catch (error) {
+          console.error('🚨 AI Chat error:', error);
+          console.error('🚨 Error details:', error.response?.data || error.message);
+          
+          let errorContent = 'Sorry, I encountered an error. Please try again.';
+          
+          // Provide more specific error messages
+          if (error.response?.status === 401) {
+            errorContent = 'Authentication error. Please try logging in again.';
+          } else if (error.response?.status === 500) {
+            errorContent = 'Server error. The AI service might be temporarily unavailable.';
+          } else if (error.code === 'NETWORK_ERROR') {
+            errorContent = 'Network error. Please check your connection and try again.';
+          }
+          
+          const errorMessage = {
+            id: Date.now() + 1,
+            content: errorContent + ' 😅',
+            senderId: 'ai',
+            conversationId: selectedConversation.id,
+            createdAt: new Date().toISOString(),
+            sender: {
+              id: 'ai',
+              username: 'AI Assistant',
+              profilePicture: null
+            },
+            messageType: 'text'
+          };
+          setAiMessages(prev => [...prev.filter(msg => msg.id !== tempId), optimisticMessage, errorMessage]);
+        }
+        return;
+      }
+
+      // Send to backend for regular conversations
+      console.log('💬 Sending regular message to backend:', {
+        conversationId: selectedConversation.id,
+        messageContent,
+        hasFile: !!fileData
+      });
+      
       const response = await messageAPI.sendToConversation(
         selectedConversation.id, 
         messageContent || undefined, 
         fileData
       );
       
+      console.log('💬 Backend response:', response.data);
+      
       // Emit via socket for real-time delivery
       if (response.data.success) {
+        console.log('💬 Emitting message via socket');
+        const receiverId = selectedConversation.isGroup 
+          ? null 
+          : selectedConversation.participants?.find(p => 
+              (p.user?.id !== user.id) || (p.userId !== user.id)
+            )?.user?.id || selectedConversation.participants?.find(p => 
+              (p.user?.id !== user.id) || (p.userId !== user.id)
+            )?.userId;
+            
+        console.log('💬 Socket message details:', {
+          conversationId: selectedConversation.id,
+          senderId: user.id,
+          senderName: user.username,
+          receiverId,
+          participants: selectedConversation.participants
+        });
+        
         sendMessage({
           ...response.data.data,
           conversationId: selectedConversation.id,
           senderId: user.id,
           senderName: user.username,
-          receiverId: selectedConversation.isGroup ? null : selectedConversation.participants?.find(p => p.id !== user.id)?.id
+          receiverId
         });
+        console.log('💬 Socket message emitted successfully');
       }
       
       if (response.data.success) {
         // Replace optimistic message with real one
-        setMessages(prev => prev.map(msg => 
-          msg.id === tempId ? { ...response.data.data, isOptimistic: false } : msg
-        ));
+        console.log('💬 Replacing optimistic message with real one:', {
+          tempId,
+          realMessage: response.data.data
+        });
+        
+        setMessages(prev => {
+          console.log('💬 Before replacement - messages count:', prev.length);
+          console.log('💬 Looking for tempId:', tempId);
+          console.log('💬 Real message data:', response.data.data);
+          
+          const updated = prev.map(msg => {
+            if (msg.id === tempId) {
+              console.log('💬 Found and replacing optimistic message');
+              return { ...response.data.data, isOptimistic: false };
+            }
+            return msg;
+          });
+          
+          console.log('💬 After replacement - messages count:', updated.length);
+          return updated;
+        });
+      } else {
+        console.error('💬 Backend response not successful:', response.data);
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -1000,25 +1216,38 @@ const UltimateMessagingHub = () => {
             </div>
           </div>
           
-          {/* Tab Navigation */}
-          <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+          {/* Tab Navigation - Improved Layout */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <button
               onClick={() => setActiveTab('conversations')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 flex-1 justify-center text-sm ${
+              className={`flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${
                 activeTab === 'conversations'
-                  ? 'bg-white text-purple-600 shadow-sm font-medium'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
               }`}
             >
               <ChatBubbleLeftIcon className="w-4 h-4" />
               <span>Chats</span>
             </button>
             <button
+              onClick={() => setActiveTab('ai-chat')}
+              className={`flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${
+                activeTab === 'ai-chat'
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+              }`}
+            >
+              <SparklesIcon className="w-4 h-4" />
+              <span>AI Chat</span>
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <button
               onClick={() => setActiveTab('groups')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 flex-1 justify-center text-sm ${
+              className={`flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${
                 activeTab === 'groups'
-                  ? 'bg-white text-purple-600 shadow-sm font-medium'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-green-500 to-blue-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
               }`}
             >
               <UserGroupIcon className="w-4 h-4" />
@@ -1026,10 +1255,10 @@ const UltimateMessagingHub = () => {
             </button>
             <button
               onClick={() => setActiveTab('following')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 flex-1 justify-center text-sm ${
+              className={`flex items-center justify-center space-x-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium ${
                 activeTab === 'following'
-                  ? 'bg-white text-purple-600 shadow-sm font-medium'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-md'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
               }`}
             >
               <UserPlusIcon className="w-4 h-4" />
@@ -1082,6 +1311,171 @@ const UltimateMessagingHub = () => {
                 <p className="text-xs">Start messaging someone to begin</p>
               </div>
             )
+          ) : activeTab === 'ai-chat' ? (
+            <div className="p-4 h-full">
+              {/* AI Assistant Card */}
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-6 mb-4 border border-emerald-100">
+                <div className="text-center">
+                  <div className="w-20 h-20 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <SparklesIcon className="w-10 h-10 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">AI Assistant</h3>
+                  <p className="text-gray-600 text-sm mb-4">Powered by NVIDIA • Always ready to help</p>
+                  <button
+                    onClick={() => {
+                      const aiConversation = {
+                        id: 'ai-assistant',
+                        isAI: true,
+                        user: {
+                          id: 'ai',
+                          username: 'AI Assistant',
+                          profilePicture: null
+                        }
+                      };
+                      setSelectedConversation(aiConversation);
+                      
+                      // Clear messages and add welcome message
+                      setMessages([]);
+                      setAiMessages([]);
+                      
+                      // Add welcome message
+                      const welcomeMessage = {
+                        id: 'ai-welcome-' + Date.now(),
+                        content: `Hello! 👋 I'm your AI assistant here to help with anything you need! 
+
+I can help you with:
+• Navigating Sociogram features 🧭
+• Writing messages and posts ✍️
+• Answering questions 🤔
+• General conversation 💬
+
+What would you like to know? 😊`,
+                        senderId: 'ai',
+                        conversationId: 'ai-assistant',
+                        createdAt: new Date().toISOString(),
+                        sender: {
+                          id: 'ai',
+                          username: 'AI Assistant',
+                          profilePicture: null
+                        },
+                        messageType: 'text'
+                      };
+                      
+                      setTimeout(() => {
+                        setAiMessages([welcomeMessage]);
+                        scrollToBottom();
+                      }, 100);
+                    }}
+                    className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white px-8 py-3 rounded-xl font-semibold hover:from-emerald-600 hover:to-teal-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                  >
+                    🚀 Start AI Chat
+                  </button>
+                </div>
+              </div>
+              
+              {/* Quick Actions Grid */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                  <span className="mr-2">⚡</span>
+                  Quick Actions
+                </h4>
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    onClick={() => {
+                      const aiConversation = {
+                        id: 'ai-assistant',
+                        isAI: true,
+                        user: { id: 'ai', username: 'AI Assistant' }
+                      };
+                      setSelectedConversation(aiConversation);
+                      
+                      // Add welcome message and set the input
+                      const welcomeMessage = {
+                        id: 'ai-welcome-email',
+                        content: `Hello! 👋 I'd be happy to help you write a professional email! 
+
+What kind of email are you looking to write? For example:
+• Business inquiry
+• Job application
+• Follow-up email
+• Meeting request
+• Thank you note
+
+Just let me know the details and I'll help you craft the perfect message! ✍️`,
+                        senderId: 'ai',
+                        conversationId: 'ai-assistant',
+                        createdAt: new Date().toISOString(),
+                        sender: { id: 'ai', username: 'AI Assistant' },
+                        messageType: 'text'
+                      };
+                      setAiMessages([welcomeMessage]);
+                      setNewMessage("Help me write a professional email");
+                    }}
+                    className="flex items-center p-3 bg-white border border-purple-200 rounded-lg hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 text-sm shadow-sm hover:shadow-md"
+                  >
+                    <span className="text-lg mr-3">📧</span>
+                    <div className="text-left">
+                      <p className="font-medium text-gray-900">Write Email</p>
+                      <p className="text-xs text-gray-500">Professional email assistance</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setSelectedConversation({
+                        id: 'ai-assistant',
+                        isAI: true,
+                        user: { id: 'ai', username: 'AI Assistant' }
+                      });
+                      setNewMessage("Give me conversation starters");
+                    }}
+                    className="flex items-center p-3 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 text-sm shadow-sm hover:shadow-md"
+                  >
+                    <span className="text-lg mr-3">💬</span>
+                    <div className="text-left">
+                      <p className="font-medium text-gray-900">Conversation Ideas</p>
+                      <p className="text-xs text-gray-500">Break the ice with friends</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setSelectedConversation({
+                        id: 'ai-assistant',
+                        isAI: true,
+                        user: { id: 'ai', username: 'AI Assistant' }
+                      });
+                      setNewMessage("Help me be more creative");
+                    }}
+                    className="flex items-center p-3 bg-white border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all duration-200 text-sm shadow-sm hover:shadow-md"
+                  >
+                    <span className="text-lg mr-3">🎨</span>
+                    <div className="text-left">
+                      <p className="font-medium text-gray-900">Creative Writing</p>
+                      <p className="text-xs text-gray-500">Boost your creativity</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setSelectedConversation({
+                        id: 'ai-assistant',
+                        isAI: true,
+                        user: { id: 'ai', username: 'AI Assistant' }
+                      });
+                      setNewMessage("Explain something complex simply");
+                    }}
+                    className="flex items-center p-3 bg-white border border-yellow-200 rounded-lg hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 text-sm shadow-sm hover:shadow-md"
+                  >
+                    <span className="text-lg mr-3">🧠</span>
+                    <div className="text-left">
+                      <p className="font-medium text-gray-900">Explain Concepts</p>
+                      <p className="text-xs text-gray-500">Simplify complex topics</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
           ) : activeTab === 'groups' ? (
             groups.length > 0 ? groups.map((group) => (
               <div
@@ -1147,7 +1541,21 @@ const UltimateMessagingHub = () => {
             {/* Chat Header */}
             <div className="bg-white p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center space-x-3">
-                {selectedConversation.isGroup ? (
+                {selectedConversation.isAI ? (
+                  // AI Chat Header
+                  <>
+                    <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                      <SparklesIcon className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">AI Assistant</p>
+                      <div className="text-xs text-green-500 flex items-center space-x-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span>Always available</span>
+                      </div>
+                    </div>
+                  </>
+                ) : selectedConversation.isGroup ? (
                   // Group Chat Header
                   <>
                     <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-400 rounded-full flex items-center justify-center">
@@ -1258,17 +1666,22 @@ const UltimateMessagingHub = () => {
 
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50 min-h-0">
-              {messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  <div className="text-center">
-                    <ChatBubbleLeftIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                    <p className="text-lg font-medium">No messages yet</p>
-                    <p className="text-sm">Send a message to start the conversation</p>
+              {(() => {
+                // Use appropriate message state based on conversation type
+                const currentMessages = selectedConversation?.isAI ? aiMessages : messages;
+                
+                return currentMessages.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    <div className="text-center">
+                      <ChatBubbleLeftIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                      <p className="text-lg font-medium">No messages yet</p>
+                      <p className="text-sm">Send a message to start the conversation</p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                messages.map((message) => {
+                ) : (
+                  currentMessages.map((message) => {
                   const isOwnMessage = String(message.senderId) === String(user.id);
+                  const isAIMessage = message.senderId === 'ai';
                   console.log('Message alignment debug:', { 
                     messageId: message.id, 
                     messageSenderId: message.senderId, 
@@ -1306,6 +1719,8 @@ const UltimateMessagingHub = () => {
                       <div className={`px-4 py-2 rounded-2xl ${
                         isOwnMessage
                           ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
+                          : isAIMessage
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white'
                           : 'bg-white text-gray-900 border border-gray-200'
                       }`}>
                         {/* Voice Message */}
@@ -1377,6 +1792,8 @@ const UltimateMessagingHub = () => {
                           <div className={`text-xs font-medium ${
                             message.senderId === user.id 
                               ? 'text-white text-opacity-80' 
+                              : isAIMessage
+                              ? 'text-white text-opacity-80'
                               : 'text-gray-600'
                           }`}>
                             {new Date(message.createdAt).toLocaleTimeString([], { 
@@ -1471,7 +1888,8 @@ const UltimateMessagingHub = () => {
                 </div>
                   );
                 })
-              )}
+              );
+              })()}
               
               {/* Typing Indicator */}
               <TypingIndicator 

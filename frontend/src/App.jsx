@@ -19,6 +19,7 @@ import Following from './components/follow/Following';
 import Followers from './components/follow/Followers';
 import FollowDebugger from './components/debug/FollowDebugger';
 import Settings from './components/settings/Settings';
+import FloatingAIAssistant from './components/ai/FloatingAIAssistant';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -215,6 +216,9 @@ function App() {
             } 
           />
             </Routes>
+            
+            {/* Floating AI Assistant - Available on all pages */}
+            <FloatingAIAssistant />
             </FollowProvider>
           </NotificationProvider>
         </SocketProvider>

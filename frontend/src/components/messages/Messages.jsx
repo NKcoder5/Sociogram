@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { PaperAirplaneIcon, UserPlusIcon, ChatBubbleLeftIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, UserPlusIcon, ChatBubbleLeftIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { messageAPI, authAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useFollow } from '../../context/FollowContext';
+import AIAssistant from './AIAssistant';
 
 const Messages = () => {
   const { user } = useAuth();
@@ -14,6 +15,8 @@ const Messages = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('conversations');
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [currentMessage, setCurrentMessage] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -99,6 +102,24 @@ const Messages = () => {
     }
   };
 
+  // AI Assistant handlers
+  const handleMessageImprove = (improvedMessage) => {
+    setNewMessage(improvedMessage);
+    setCurrentMessage(improvedMessage);
+  };
+
+  const handleMessageGenerate = (generatedMessage) => {
+    setNewMessage(generatedMessage);
+    setCurrentMessage(generatedMessage);
+  };
+
+  // Update current message when typing
+  const handleMessageChange = (e) => {
+    const value = e.target.value;
+    setNewMessage(value);
+    setCurrentMessage(value);
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -119,7 +140,7 @@ const Messages = () => {
           <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setActiveTab('conversations')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 flex-1 justify-center text-sm ${
+              className={`flex items-center space-x-2 px-2 py-2 rounded-md transition-all duration-200 flex-1 justify-center text-xs ${
                 activeTab === 'conversations'
                   ? 'bg-white text-purple-600 shadow-sm font-medium'
                   : 'text-gray-600 hover:text-gray-900'
@@ -130,7 +151,7 @@ const Messages = () => {
             </button>
             <button
               onClick={() => setActiveTab('following')}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md transition-all duration-200 flex-1 justify-center text-sm ${
+              className={`flex items-center space-x-2 px-2 py-2 rounded-md transition-all duration-200 flex-1 justify-center text-xs ${
                 activeTab === 'following'
                   ? 'bg-white text-purple-600 shadow-sm font-medium'
                   : 'text-gray-600 hover:text-gray-900'
@@ -138,6 +159,17 @@ const Messages = () => {
             >
               <UserPlusIcon className="w-4 h-4" />
               <span>Following</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('ai')}
+              className={`flex items-center space-x-2 px-2 py-2 rounded-md transition-all duration-200 flex-1 justify-center text-xs ${
+                activeTab === 'ai'
+                  ? 'bg-white text-purple-600 shadow-sm font-medium'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <SparklesIcon className="w-4 h-4" />
+              <span>AI Helper</span>
             </button>
           </div>
         </div>
@@ -175,7 +207,7 @@ const Messages = () => {
                 </div>
               ))
             )
-          ) : (
+          ) : activeTab === 'following' ? (
             // Following List
             followedUsers.length === 0 ? (
               <div className="p-8 text-center">
@@ -211,6 +243,93 @@ const Messages = () => {
                 </div>
               ))
             )
+          ) : (
+            // AI Assistant Tab
+            <div className="p-4">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <SparklesIcon className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">AI Message Assistant</h3>
+                <p className="text-sm text-gray-600 mb-4">Get help writing better messages with AI</p>
+                
+                <button
+                  onClick={() => setShowAIAssistant(true)}
+                  className="w-full bg-gradient-to-r from-purple-500 to-blue-500 text-white py-3 px-4 rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-200 font-medium"
+                >
+                  Open AI Assistant
+                </button>
+              </div>
+              
+              {/* Quick AI Features */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">Quick Actions:</h4>
+                
+                <button
+                  onClick={() => {
+                    setCurrentMessage("Help me write a professional message");
+                    setShowAIAssistant(true);
+                  }}
+                  className="w-full p-3 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg">✍️</span>
+                    <div>
+                      <p className="font-medium text-sm">Write Professional Message</p>
+                      <p className="text-xs text-purple-600">Get help crafting formal messages</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setCurrentMessage("Translate this message to another language");
+                    setShowAIAssistant(true);
+                  }}
+                  className="w-full p-3 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg">🌍</span>
+                    <div>
+                      <p className="font-medium text-sm">Translate Messages</p>
+                      <p className="text-xs text-blue-600">Communicate in any language</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setCurrentMessage("Give me conversation starters");
+                    setShowAIAssistant(true);
+                  }}
+                  className="w-full p-3 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg">💬</span>
+                    <div>
+                      <p className="font-medium text-sm">Conversation Starters</p>
+                      <p className="text-xs text-green-600">Break the ice with new friends</p>
+                    </div>
+                  </div>
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setCurrentMessage("Make this message more friendly and casual");
+                    setShowAIAssistant(true);
+                  }}
+                  className="w-full p-3 bg-yellow-50 text-yellow-700 rounded-lg hover:bg-yellow-100 transition-colors text-left"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg">😊</span>
+                    <div>
+                      <p className="font-medium text-sm">Improve Tone</p>
+                      <p className="text-xs text-yellow-600">Make messages more engaging</p>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -260,9 +379,17 @@ const Messages = () => {
                   type="text"
                   placeholder="Message..."
                   value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
+                  onChange={handleMessageChange}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-instagram-blue"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowAIAssistant(true)}
+                  className="p-2 text-purple-500 hover:text-purple-700 transition-colors"
+                  title="AI Assistant"
+                >
+                  <SparklesIcon className="h-5 w-5" />
+                </button>
                 <button
                   type="submit"
                   disabled={!newMessage.trim()}
@@ -282,6 +409,17 @@ const Messages = () => {
           </div>
         )}
       </div>
+
+      {/* AI Assistant Modal */}
+      <AIAssistant
+        isOpen={showAIAssistant}
+        onClose={() => setShowAIAssistant(false)}
+        onMessageImprove={handleMessageImprove}
+        onMessageGenerate={handleMessageGenerate}
+        selectedConversation={selectedConversation}
+        currentMessage={currentMessage}
+        setCurrentMessage={setCurrentMessage}
+      />
     </div>
   );
 };

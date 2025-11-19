@@ -87,6 +87,7 @@ export const authAPI = {
   getUserByUsername: (username) => api.get(`/user/profile/username/${username}`),
   getFollowers: (userId) => api.get(`/user/${userId}/followers`),
   getFollowing: (userId) => api.get(`/user/${userId}/following`),
+  getMutualConnections: () => api.get('/user/mutual-connections'),
 };
 
 // Post API calls
@@ -124,6 +125,7 @@ export const messageAPI = {
   getMessages: (userId) => api.get(`/message/all/${userId}`),
   getConversations: () => api.get('/message/conversations'),
   getByConversation: (conversationId) => api.get(`/message/conversation/${conversationId}`),
+  getConversationMessages: (conversationId) => api.get(`/message/conversation/${conversationId}`),
   sendToConversation: (conversationId, message, file = null) =>
     api.post(`/message/conversation/${conversationId}/send`, { message, file }),
   createGroupChat: (data) => api.post('/message/group', data),
