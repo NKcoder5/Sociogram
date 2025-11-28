@@ -12,6 +12,14 @@ import notificationRoute from "./routes/notification.route.js";
 import groupRoute from "./routes/group.route.js";
 import exploreRoute from "./routes/explore.route.js";
 import storyRoute from "./routes/story.route.js";
+import announcementRoute from "./routes/announcement.route.js";
+import directoryRoute from "./routes/directory.route.js";
+import materialRoute from "./routes/material.route.js";
+import achievementRoute from "./routes/achievement.route.js";
+import eventRoute from "./routes/event.route.js";
+import adminRoute from "./routes/admin.route.js";
+import dashboardRoute from "./routes/dashboard.route.js";
+import chatGroupRoute from "./routes/chatGroup.route.js";
 import { initializeSocket } from "./config/socket.js";
 import { startStoryCleanupScheduler } from "./utils/storyCleanup.js";
 import { initializeFirebaseAdmin } from "./config/firebase-admin.js";
@@ -74,7 +82,15 @@ app.use("/api/v1/auth", userRoute); // Also expose auth endpoints under /auth
 app.use("/api/v1/post", postRoute);
 app.use("/api/v1/message", messageRoute);
 app.use("/api/v1/group", groupRoute);
-app.use("/api/v1/admin", seedRoute);
+app.use("/api/v1/admin/seed", seedRoute);
+app.use("/api/v1/admin", adminRoute);
+app.use("/api/v1/announcements", announcementRoute);
+app.use("/api/v1/directory", directoryRoute);
+app.use("/api/v1/materials", materialRoute);
+app.use("/api/v1/achievements", achievementRoute);
+app.use("/api/v1/events", eventRoute);
+app.use("/api/v1/dashboard", dashboardRoute);
+app.use("/api/v1/chat-groups", chatGroupRoute);
 app.use("/api/v1/notifications", notificationRoute);
 app.use("/api/v1/explore", exploreRoute);
 app.use("/api/v1/story", storyRoute);
@@ -107,7 +123,14 @@ app.get("/", (req,res)=>{
             notifications: "/api/v1/notifications",
             upload: "/api/v1/upload",
             explore: "/api/v1/explore",
-            stories: "/api/v1/story"
+            stories: "/api/v1/story",
+            announcements: "/api/v1/announcements",
+            directory: "/api/v1/directory",
+            materials: "/api/v1/materials",
+            achievements: "/api/v1/achievements",
+            events: "/api/v1/events",
+            dashboard: "/api/v1/dashboard",
+            admin: "/api/v1/admin"
         }
     });
 });

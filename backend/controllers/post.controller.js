@@ -49,7 +49,7 @@ export const addNewPost = async (req, res) => {
         } : 'Missing');
         console.log('User ID:', req.id);
         
-        const { caption } = req.body;
+        const { caption, category = "GENERAL", audience = "PUBLIC", departmentId, classId } = req.body;
         const image = req.file;
         const authorId = req.id;
 
@@ -117,17 +117,55 @@ export const addNewPost = async (req, res) => {
             imageUrl = `https://picsum.photos/800/600?random=${Date.now()}`;
         }
         
+        const author = await prisma.user.findUnique({
+            where: { id: authorId },
+            select: { departmentId: true, classId: true }
+        });
+
+        let resolvedDepartmentId = null;
+        let resolvedClassId = null;
+
+        if (audience === "DEPARTMENT") {
+            resolvedDepartmentId = departmentId || author?.departmentId;
+            if (!resolvedDepartmentId) {
+                return res.status(400).json({
+                    message: "Department ID is required for department posts",
+                    success: false
+                });
+            }
+        }
+
+        if (audience === "CLASS") {
+            resolvedClassId = classId || author?.classId;
+            if (!resolvedClassId) {
+                return res.status(400).json({
+                    message: "Class ID is required for class posts",
+                    success: false
+                });
+            }
+        }
+
         // Create post in database
         console.log('💾 Creating post in database...');
         const post = await prisma.post.create({
             data: {
                 caption: finalCaption,
                 image: imageUrl,
-                authorId
+                authorId,
+                category,
+                audience,
+                departmentId: resolvedDepartmentId,
+                classId: resolvedClassId
             },
             include: {
                 author: {
                     select: { id: true, username: true, profilePicture: true }
+                },
+                department: {
+                    select: { id: true, name: true, code: true }
+                },
+                classSection: {
+                    select: { id: true, name: true, code: true, section: true }
                 }
             }
         });
@@ -173,50 +211,82 @@ export const addNewPost = async (req, res) => {
         });
     }
 };
-export const getAllPost=async(req,res)=>{
-    try{
-        const posts=await prisma.post.findMany({
-            orderBy: {createdAt: 'desc'},
+export const getAllPost = async (req, res) => {
+    try {
+        const userId = req.id;
+        const { category, audience, departmentId, classId, limit = 20 } = req.query;
+
+        const viewer = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { departmentId: true, classId: true }
+        });
+
+        const visibilityFilter = {
+            OR: [
+                { audience: "PUBLIC" },
+                { audience: "COLLEGE" },
+                viewer?.departmentId ? { audience: "DEPARTMENT", departmentId: viewer.departmentId } : null,
+                viewer?.classId ? { audience: "CLASS", classId: viewer.classId } : null
+            ].filter(Boolean)
+        };
+
+        const where = {
+            AND: [visibilityFilter]
+        };
+
+        if (category) where.category = category;
+        if (audience) where.audience = audience;
+        if (departmentId) where.departmentId = departmentId;
+        if (classId) where.classId = classId;
+
+        const posts = await prisma.post.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            take: Number(limit),
             include: {
                 author: {
-                    select: {id: true, username: true, profilePicture: true}
+                    select: { id: true, username: true, profilePicture: true, role: true }
+                },
+                department: {
+                    select: { id: true, name: true, code: true }
+                },
+                classSection: {
+                    select: { id: true, name: true, code: true, section: true }
                 },
                 comments: {
-                    orderBy: {createdAt: 'desc'},
+                    orderBy: { createdAt: 'desc' },
                     include: {
                         author: {
-                            select: {id: true, username: true, profilePicture: true}
+                            select: { id: true, username: true, profilePicture: true }
                         }
                     }
                 },
                 reactions: {
                     include: {
                         user: {
-                            select: {id: true, username: true}
+                            select: { id: true, username: true }
                         }
                     }
                 },
                 likes: {
                     include: {
                         user: {
-                            select: {id: true, username: true}
+                            select: { id: true, username: true }
                         }
                     }
                 }
             }
         });
 
-        const postsWithReactions = posts;
-
         return res.status(200).json({
-            posts: postsWithReactions,
-            success:true
+            posts,
+            success: true
         });
-    } catch(error) {
+    } catch (error) {
         console.log(error);
         return res.status(500).json({
-            message:'Internal server error',
-            success:false
+            message: 'Internal server error',
+            success: false
         });
     }
 }

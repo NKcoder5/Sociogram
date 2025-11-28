@@ -7,7 +7,17 @@ import { createNotification } from "./notification.controller.js";
 import { getFirebaseAuth } from "../config/firebase-admin.js";
 export const register=async(req,res)=>{
     try{
-        const {username,email,password}=req.body;
+        const {
+            username,
+            email,
+            password,
+            collegeId,
+            departmentId,
+            classId,
+            year,
+            departmentName,
+            className
+        }=req.body;
         if(!username||!email||!password){
             return res.status(401).json({
                 message:"Something is missing, please check!",
@@ -22,11 +32,25 @@ export const register=async(req,res)=>{
             });
         };
         const hashedPassword=await bcrypt.hash(password, 10);
+        const profileMeta = {};
+        if(!departmentId && departmentName){
+            profileMeta.requestedDepartment = departmentName;
+        }
+        if(!classId && className){
+            profileMeta.requestedClass = className;
+        }
         const newUser = await prisma.user.create({
             data: {
                 username,
                 email,
-                password:hashedPassword
+                password:hashedPassword,
+                collegeId,
+                departmentId: departmentId || undefined,
+                classId: classId || undefined,
+                year,
+                role: "STUDENT",
+                profileStatus: "PENDING",
+                profileMeta: Object.keys(profileMeta).length ? profileMeta : undefined
             }
         });
 
@@ -42,7 +66,12 @@ export const register=async(req,res)=>{
             bio: newUser.bio,
             followers: [],
             following: [],
-            posts: []
+            posts: [],
+            role: newUser.role,
+            profileStatus: newUser.profileStatus,
+            departmentId: newUser.departmentId,
+            classId: newUser.classId,
+            year: newUser.year
         };
 
         return res.cookie('token', token, {httpOnly: true, sameSite: 'strict', maxAge: 1*24*60*60*1000}).status(201).json({
@@ -98,7 +127,13 @@ export const login=async (req, res)=>{
             bio:user.bio,
             followers:user.followers,
             following:user.following,
-            posts:populatedPosts
+            posts:populatedPosts,
+            role:user.role,
+            profileStatus:user.profileStatus,
+            departmentId:user.departmentId,
+            classId:user.classId,
+            year:user.year,
+            collegeId:user.collegeId
         }
 
         return res.cookie('token',token,{httpOnly:true, sameSite:'strict', maxAge:1*24*60*60*1000}).json({
@@ -140,7 +175,9 @@ export const getProfile=async(req,res)=>{
             include: {
                 posts: {orderBy: {createdAt: 'desc'}},
                 followers: {select: {follower: {select: {id: true, username: true, profilePicture: true}}}},
-                following: {select: {following: {select: {id: true, username: true, profilePicture: true}}}}
+                following: {select: {following: {select: {id: true, username: true, profilePicture: true}}}},
+                department: {select: {id: true, name: true, code: true}},
+                classSection: {select: {id: true, name: true, code: true, section: true}}
             }
         });
         
@@ -212,7 +249,7 @@ export const getProfileByUsername = async (req, res) => {
 export const editProfile=async(req,res)=>{
     try {
         const userId=req.id;
-        const {bio, gender}=req.body;
+        const {bio, gender, collegeId, departmentId, classId, year}=req.body;
         const profilePicture=req.file;
         let cloudResponse;
         if(profilePicture){
@@ -230,11 +267,33 @@ export const editProfile=async(req,res)=>{
         const updateData = {};
         if(bio) updateData.bio=bio;
         if(profilePicture) updateData.profilePicture=cloudResponse.secure_url;
+        if(gender) updateData.gender=gender;
+        if(collegeId) updateData.collegeId=collegeId;
+        if(year) updateData.year=year;
+        if(departmentId && departmentId !== user.departmentId){
+            updateData.departmentId=departmentId;
+            updateData.profileStatus="PENDING";
+        }
+        if(classId && classId !== user.classId){
+            updateData.classId=classId;
+            updateData.profileStatus="PENDING";
+        }
         
         const updatedUser = await prisma.user.update({
             where: {id: userId},
             data: updateData,
-            select: {id: true, username: true, email: true, profilePicture: true, bio: true}
+            select: {
+                id: true,
+                username: true,
+                email: true,
+                profilePicture: true,
+                bio: true,
+                year: true,
+                collegeId: true,
+                departmentId: true,
+                classId: true,
+                profileStatus: true
+            }
         });
         return res.status(200).json({
             message:'Profile updated!',

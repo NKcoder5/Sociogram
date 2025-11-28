@@ -9,6 +9,8 @@ const CreatePost = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [caption, setCaption] = useState('');
+  const [category, setCategory] = useState('GENERAL');
+  const [audience, setAudience] = useState('PUBLIC');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -45,10 +47,14 @@ const CreatePost = () => {
       const formData = new FormData();
       formData.append('image', selectedFile);
       formData.append('caption', caption || '');
+      formData.append('category', category);
+      formData.append('audience', audience);
       
       console.log('📦 FormData created with:');
       console.log('  - Image file:', selectedFile.name, selectedFile.size, 'bytes');
       console.log('  - Caption:', caption || '(empty)');
+      console.log('  - Category:', category);
+      console.log('  - Audience:', audience);
 
       const response = await postAPI.addPost(formData);
       
@@ -177,6 +183,37 @@ const CreatePost = () => {
                       className="w-full mt-2 border-none outline-none resize-none text-gray-700 placeholder-gray-500"
                       rows="4"
                     />
+                  </div>
+                </div>
+
+                {/* Category and Audience Selection */}
+                <div className="space-y-4 pt-4 border-t border-gray-100">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Post Category</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="GENERAL">General</option>
+                      <option value="ACADEMIC">Academic</option>
+                      <option value="TALENT">Talent</option>
+                      <option value="EVENT">Event</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Audience</label>
+                    <select
+                      value={audience}
+                      onChange={(e) => setAudience(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="PUBLIC">Public</option>
+                      <option value="COLLEGE">College Only</option>
+                      {user?.departmentId && <option value="DEPARTMENT">Department Only</option>}
+                      {user?.classId && <option value="CLASS">Class Only</option>}
+                    </select>
                   </div>
                 </div>
                 

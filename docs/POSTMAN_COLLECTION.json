@@ -1,0 +1,125 @@
+{
+  "info": {
+    "name": "College Social Network - Phase 1",
+    "_postman_id": "f3d4912f-4f32-4d2e-9be7-a1c8615f1b9f",
+    "description": "Key API calls for the college-specific Sociogram backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/user/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"demo.student\",\n  \"email\": \"student@example.edu\",\n  \"password\": \"Pass@123\",\n  \"collegeId\": \"COLL-001\",\n  \"departmentName\": \"Computer Science\",\n  \"className\": \"CS-2025\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/user/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"student@example.edu\",\n  \"password\": \"Pass@123\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Admin - Approve User",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/users/:id/approve",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"STUDENT\",\n  \"departmentId\": \"<dept-id>\",\n  \"classId\": \"<class-id>\",\n  \"year\": \"2025\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Announcements - List",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/announcements"
+      }
+    },
+    {
+      "name": "Announcements - Create",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/announcements",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Exam Schedule\",\n  \"content\": \"Mid-term exams start next Monday\",\n  \"scope\": \"CLASS\",\n  \"classId\": \"<class-id>\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Materials - Upload",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "multipart/form-data" }
+        ],
+        "url": "{{baseUrl}}/materials",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "title", "value": "DSA Notes" },
+            { "key": "subject", "value": "Data Structures" },
+            { "key": "file", "type": "file", "src": "" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Events - Register",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/events/:id/register"
+      }
+    },
+    {
+      "name": "Achievements - Submit",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "multipart/form-data" }],
+        "url": "{{baseUrl}}/achievements",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "title", "value": "Hackathon Winner" },
+            { "key": "description", "value": "Won 1st place at University Hackathon" },
+            { "key": "tags", "value": "AI,Innovation" },
+            { "key": "media", "type": "file", "src": "" },
+            { "key": "certificate", "type": "file", "src": "" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Dashboard - Student",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/dashboard/student"
+      }
+    },
+    {
+      "name": "Chat Group - Join Department",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/chat-groups/department/join"
+      }
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000/api/v1" }
+  ]
+}
+

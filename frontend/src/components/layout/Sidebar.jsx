@@ -13,9 +13,15 @@ import {
   HeartIcon,
   BellIcon,
   ChevronRightIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  MegaphoneIcon,
+  BookOpenIcon,
+  CalendarDaysIcon,
+  BuildingOffice2Icon,
+  AcademicCapIcon,
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline';
-import { Users } from 'lucide-react';
+import { Users, Trophy } from 'lucide-react';
 import { 
   HomeIcon as HomeIconSolid,
   ChatBubbleLeftIcon as MessageIconSolid,
@@ -38,6 +44,22 @@ const Sidebar = () => {
   };
 
   const menuItems = [
+    ...(user?.role === 'STUDENT'
+      ? [{
+          name: 'Student Dashboard',
+          path: '/dashboard/student',
+          icon: AcademicCapIcon,
+          activeIcon: AcademicCapIcon,
+        }]
+      : []),
+    ...(user && ['FACULTY','ADMIN','SUPER_ADMIN'].includes(user.role)
+      ? [{
+          name: 'Faculty Dashboard',
+          path: '/dashboard/faculty',
+          icon: ShieldCheckIcon,
+          activeIcon: ShieldCheckIcon,
+        }]
+      : []),
     {
       name: 'Feed',
       path: '/feed',
@@ -51,10 +73,34 @@ const Sidebar = () => {
       activeIcon: GlobeAltIconSolid,
     },
     {
-      name: 'Reels',
-      path: '/reels',
-      icon: PlayIcon,
-      activeIcon: PlayIconSolid,
+      name: 'Announcements',
+      path: '/announcements',
+      icon: MegaphoneIcon,
+      activeIcon: MegaphoneIcon,
+    },
+    {
+      name: 'Notes',
+      path: '/notes',
+      icon: BookOpenIcon,
+      activeIcon: BookOpenIcon,
+    },
+    {
+      name: 'Events',
+      path: '/events',
+      icon: CalendarDaysIcon,
+      activeIcon: CalendarDaysIcon,
+    },
+    {
+      name: 'Directory',
+      path: '/directory',
+      icon: BuildingOffice2Icon,
+      activeIcon: BuildingOffice2Icon,
+    },
+    {
+      name: 'Talent Hub',
+      path: '/talent',
+      icon: Trophy,
+      activeIcon: Trophy,
     },
     {
       name: 'Messages',
@@ -80,6 +126,14 @@ const Sidebar = () => {
       icon: UserIcon,
       activeIcon: UserIconSolid,
     },
+    ...(user && ['ADMIN','SUPER_ADMIN'].includes(user.role)
+      ? [{
+          name: 'Admin Console',
+          path: '/admin/console',
+          icon: ShieldCheckIcon,
+          activeIcon: ShieldCheckIcon,
+        }]
+      : []),
   ];
 
   return (
@@ -120,6 +174,14 @@ const Sidebar = () => {
               <div className="flex-1">
                 <p className="font-semibold text-gray-900 text-sm">{user?.username}</p>
                 <p className="text-xs text-gray-600">@{user?.username}</p>
+                <div className="flex space-x-2 mt-2">
+                  <span className="px-2 py-1 text-[10px] uppercase tracking-wide rounded-full bg-white text-purple-600 font-semibold">
+                    {user?.role}
+                  </span>
+                  <span className="px-2 py-1 text-[10px] uppercase tracking-wide rounded-full bg-white text-gray-600 font-semibold">
+                    {user?.profileStatus}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

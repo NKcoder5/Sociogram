@@ -10,6 +10,12 @@ const AuthSidebar = ({ isOpen, onClose, initialMode = 'login' }) => {
     username: '',
     email: '',
     password: '',
+    collegeId: '',
+    departmentId: '',
+    classId: '',
+    year: '',
+    departmentName: '',
+    className: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -27,7 +33,7 @@ const AuthSidebar = ({ isOpen, onClose, initialMode = 'login' }) => {
   // Reset form when mode changes or sidebar opens
   useEffect(() => {
     if (isOpen) {
-      setFormData({ username: '', email: '', password: '' });
+      setFormData({ username: '', email: '', password: '', collegeId: '', departmentId: '', classId: '', year: '', departmentName: '', className: '' });
       setError('');
       setShowPassword(false);
     }
@@ -164,7 +170,7 @@ const AuthSidebar = ({ isOpen, onClose, initialMode = 'login' }) => {
     const newMode = mode === 'login' ? 'register' : 'login';
     setMode(newMode);
     setError('');
-    setFormData({ username: '', email: '', password: '' });
+    setFormData({ username: '', email: '', password: '', collegeId: '', departmentId: '', classId: '', year: '', departmentName: '', className: '' });
     setShowPassword(false);
   };
 
@@ -317,6 +323,60 @@ const AuthSidebar = ({ isOpen, onClose, initialMode = 'login' }) => {
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-purple-500/5 to-pink-500/5 opacity-0 group-focus-within:opacity-100 transition-opacity pointer-events-none"></div>
               </div>
             </div>
+
+            {/* College Details (Register only) */}
+            {mode === 'register' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="text"
+                  name="collegeId"
+                  placeholder="College ID"
+                  value={formData.collegeId}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white hover:border-gray-300 shadow-sm focus:shadow-md"
+                />
+                <input
+                  type="text"
+                  name="year"
+                  placeholder="Academic Year"
+                  value={formData.year}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white hover:border-gray-300 shadow-sm focus:shadow-md"
+                />
+                <input
+                  type="text"
+                  name="departmentId"
+                  placeholder="Department ID (if assigned)"
+                  value={formData.departmentId}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white hover:border-gray-300 shadow-sm focus:shadow-md"
+                />
+                <input
+                  type="text"
+                  name="departmentName"
+                  placeholder="Department Name (optional)"
+                  value={formData.departmentName}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white hover:border-gray-300 shadow-sm focus:shadow-md"
+                />
+                <input
+                  type="text"
+                  name="classId"
+                  placeholder="Class ID (if assigned)"
+                  value={formData.classId}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white hover:border-gray-300 shadow-sm focus:shadow-md md:col-span-1"
+                />
+                <input
+                  type="text"
+                  name="className"
+                  placeholder="Class Name (optional)"
+                  value={formData.className}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 text-gray-900 placeholder-gray-500 bg-white hover:border-gray-300 shadow-sm focus:shadow-md md:col-span-1"
+                />
+              </div>
+            )}
 
             {/* Submit Button */}
             <button

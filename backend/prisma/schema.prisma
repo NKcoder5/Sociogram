@@ -10,62 +10,165 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  STUDENT
+  FACULTY
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ProfileStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+}
+
+enum AnnouncementScope {
+  COLLEGE
+  DEPARTMENT
+  CLASS
+}
+
+enum MaterialType {
+  NOTE
+  ASSIGNMENT
+  SYLLABUS
+  OTHER
+}
+
+enum AchievementStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum EventType {
+  CULTURAL
+  ACADEMIC
+  SPORTS
+  OTHER
+}
+
+enum RegistrationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ClubRole {
+  MEMBER
+  LEAD
+  MENTOR
+}
+
+enum PostAudience {
+  PUBLIC
+  COLLEGE
+  DEPARTMENT
+  CLASS
+}
+
+enum PostCategory {
+  GENERAL
+  ACADEMIC
+  TALENT
+  EVENT
+}
+
+enum ChatScope {
+  PRIVATE
+  DEPARTMENT
+  CLASS
+  CLUB
+}
+
 model User {
-  id              String   @id @default(cuid())
-  username        String   @unique
-  email           String   @unique
-  password        String
-  profilePicture  String?
-  bio             String?
-  isPrivate       Boolean  @default(false)
-  firebaseUid     String?  @unique
-  provider        String?  @default("email")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default(cuid())
+  username       String   @unique
+  email          String   @unique
+  password       String
+  profilePicture String?
+  bio            String?
+  isPrivate      Boolean  @default(false)
+  firebaseUid    String?  @unique
+  provider       String?  @default("email")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Relationships
-  posts           Post[]
-  comments        Comment[]
-  likes           Like[]
-  reactions       Reaction[]
-  
+  posts     Post[]
+  comments  Comment[]
+  likes     Like[]
+  reactions Reaction[]
+
+  // College meta
+  collegeId            String?
+  departmentId         String?
+  department           Department?    @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: SetNull)
+  classId              String?
+  classSection         ClassSection?  @relation("ClassMembers", fields: [classId], references: [id], onDelete: SetNull)
+  year                 String?
+  role                 UserRole       @default(STUDENT)
+  profileStatus        ProfileStatus  @default(PENDING)
+  profileMeta          Json?
+  departmentsLed       Department[]   @relation("DepartmentHead")
+  classesAdvising      ClassSection[] @relation("ClassAdvisor")
+  verifiedAchievements Achievement[]  @relation("AchievementVerifier")
+
   // Followers relationship
-  followers       Follow[] @relation("UserFollowers")
-  following       Follow[] @relation("UserFollowing")
-  
+  followers Follow[] @relation("UserFollowers")
+  following Follow[] @relation("UserFollowing")
+
   // Messages
-  sentMessages     Message[] @relation("MessageSender")
-  receivedMessages Message[] @relation("MessageReceiver")
+  sentMessages     Message[]                 @relation("MessageSender")
+  receivedMessages Message[]                 @relation("MessageReceiver")
   conversations    ConversationParticipant[]
   messageReads     MessageRead[]
   messageReactions MessageReaction[]
-  
+
   // Notifications
   sentNotifications     Notification[] @relation("NotificationSender")
   receivedNotifications Notification[] @relation("NotificationReceiver")
-  
+
   // Group relationships
-  ownedGroups    Conversation[] @relation("GroupOwner")
-  adminGroups    GroupAdmin[]   @relation("GroupAdmins")
-  
+  ownedGroups Conversation[] @relation("GroupOwner")
+  adminGroups GroupAdmin[]   @relation("GroupAdmins")
+
   // Stories
-  stories        Story[]
-  storyViews     StoryView[]
+  stories    Story[]
+  storyViews StoryView[]
+
+  // College features
+  announcementsAuthored Announcement[]      @relation("AnnouncementAuthor")
+  materialsAuthored     Material[]          @relation("MaterialCreator")
+  materialComments      MaterialComment[]
+  achievements          Achievement[]
+  eventsCreated         Event[]             @relation("EventCreator")
+  eventRegistrations    EventRegistration[]
+  clubsFounded          Club[]              @relation("ClubFounder")
+  clubMemberships       ClubMember[]
 
   @@map("users")
 }
 
 model Post {
-  id          String   @id @default(cuid())
-  caption     String?
-  image       String?
-  location    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id           String        @id @default(cuid())
+  caption      String?
+  image        String?
+  location     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  category     PostCategory  @default(GENERAL)
+  audience     PostAudience  @default(PUBLIC)
+  departmentId String?
+  department   Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  classId      String?
+  classSection ClassSection? @relation(fields: [classId], references: [id], onDelete: SetNull)
+
   // Relationships
   authorId      String
-  author        User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author        User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments      Comment[]
   likes         Like[]
   reactions     Reaction[]
@@ -79,73 +182,81 @@ model Comment {
   text      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relationships
-  postId    String
-  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  postId   String
+  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@map("comments")
 }
 
 model Like {
-  id       String @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relationships
-  postId   String
-  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([postId, userId])
   @@map("likes")
 }
 
 model Reaction {
-  id       String @id @default(cuid())
-  emoji    String
-  
+  id    String @id @default(cuid())
+  emoji String
+
   // Relationships
-  postId   String
-  post     Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([postId, userId])
   @@map("reactions")
 }
 
 model Follow {
-  id          String @id @default(cuid())
-  createdAt   DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
   // Relationships
   followerId  String
   follower    User   @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
   followingId String
   following   User   @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
-  
+
   @@unique([followerId, followingId])
   @@map("follows")
 }
 
 model Conversation {
-  id          String   @id @default(cuid())
-  isGroup     Boolean  @default(false)
-  isAI        Boolean  @default(false)
-  name        String?
-  description String?
-  avatar      String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id           String        @id @default(cuid())
+  isGroup      Boolean       @default(false)
+  isAI         Boolean       @default(false)
+  name         String?
+  description  String?
+  avatar       String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  scope        ChatScope     @default(PRIVATE)
+  departmentId String?
+  classId      String?
+  clubId       String?
+  autoManaged  Boolean       @default(false)
+  department   Department?   @relation("DepartmentConversations", fields: [departmentId], references: [id], onDelete: SetNull)
+  classSection ClassSection? @relation("ClassConversations", fields: [classId], references: [id], onDelete: SetNull)
+  club         Club?         @relation("ClubConversations", fields: [clubId], references: [id], onDelete: SetNull)
+
   // Group specific fields
-  groupOwnerId    String?
-  groupOwner      User?   @relation("GroupOwner", fields: [groupOwnerId], references: [id])
-  groupAdmins     GroupAdmin[]
-  groupSettings   GroupSettings?
-  
+  groupOwnerId  String?
+  groupOwner    User?          @relation("GroupOwner", fields: [groupOwnerId], references: [id])
+  groupAdmins   GroupAdmin[]
+  groupSettings GroupSettings?
+
   // Relationships
   participants ConversationParticipant[]
   messages     Message[]
@@ -154,59 +265,59 @@ model Conversation {
 }
 
 model GroupAdmin {
-  id             String @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relationships
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   userId         String
   user           User         @relation("GroupAdmins", fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([conversationId, userId])
   @@map("group_admins")
 }
 
 model GroupSettings {
-  id                  String  @id @default(cuid())
+  id                 String  @id @default(cuid())
   isPrivate          Boolean @default(false)
   allowMemberInvites Boolean @default(true)
   requireApproval    Boolean @default(false)
   muteNotifications  Boolean @default(false)
-  
+
   // Relationships
   conversationId String       @unique
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  
+
   @@map("group_settings")
 }
 
 model ConversationParticipant {
-  id             String @id @default(cuid())
-  
+  id String @id @default(cuid())
+
   // Relationships
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   userId         String
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@unique([conversationId, userId])
   @@map("conversation_participants")
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  content   String?
-  messageType String @default("text") // text, image, file
-  isAI      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  id          String   @id @default(cuid())
+  content     String?
+  messageType String   @default("text") // text, image, file
+  isAI        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   // File attachment fields
-  fileUrl   String?
-  fileName  String?
-  fileType  String?
-  fileSize  Int?
-  
+  fileUrl  String?
+  fileName String?
+  fileType String?
+  fileSize Int?
+
   // Relationships
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -216,21 +327,21 @@ model Message {
   receiver       User?        @relation("MessageReceiver", fields: [receiverId], references: [id])
 
   // Read receipts and reactions
-  reads       MessageRead[]
-  reactions   MessageReaction[]
+  reads     MessageRead[]
+  reactions MessageReaction[]
 
   @@map("messages")
 }
 
 model MessageRead {
-  id         String   @id @default(cuid())
-  readAt     DateTime @default(now())
+  id     String   @id @default(cuid())
+  readAt DateTime @default(now())
 
   // Relationships
-  messageId  String
-  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messageId String
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId])
   @@map("message_reads")
@@ -243,61 +354,265 @@ model MessageReaction {
 
   // Relationships
   messageId String
-  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  message   Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([messageId, userId, emoji])
   @@map("message_reactions")
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  type        String   // 'like', 'comment', 'follow', 'message'
-  message     String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  
+  id        String   @id @default(cuid())
+  type      String // 'like', 'comment', 'follow', 'message'
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  payload   Json?
+
   // References
-  postId      String?
-  post        Post?    @relation(fields: [postId], references: [id], onDelete: Cascade)
-  
+  postId String?
+  post   Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
   // Relationships
-  senderId    String
-  sender      User     @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiverId  String
-  receiver    User     @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  senderId   String
+  sender     User   @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String
+  receiver   User   @relation("NotificationReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
 
 model Story {
-  id          String   @id @default(cuid())
-  mediaUrl    String?
-  mediaType   String   @default("text") // text, image, video
-  text        String?
-  expiresAt   DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  mediaUrl  String?
+  mediaType String   @default("text") // text, image, video
+  text      String?
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Relationships
-  authorId    String
-  author      User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  views       StoryView[]
-  
+  authorId String
+  author   User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views    StoryView[]
+
   @@map("stories")
 }
 
 model StoryView {
-  id        String   @id @default(cuid())
-  viewedAt  DateTime @default(now())
-  
+  id       String   @id @default(cuid())
+  viewedAt DateTime @default(now())
+
   // Relationships
-  storyId   String
-  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  storyId String
+  story   Story  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([storyId, userId])
   @@map("story_views")
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String
+  code        String   @unique
+  description String?
+  headId      String?
+  head        User?    @relation("DepartmentHead", fields: [headId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members       User[]         @relation("DepartmentMembers")
+  classes       ClassSection[]
+  announcements Announcement[]
+  materials     Material[]
+  achievements  Achievement[]
+  events        Event[]
+  clubs         Club[]
+  posts         Post[]
+  conversations Conversation[] @relation("DepartmentConversations")
+
+  @@map("departments")
+}
+
+model ClassSection {
+  id           String   @id @default(cuid())
+  name         String
+  code         String   @unique
+  section      String?
+  year         String?
+  semester     Int?
+  departmentId String
+  advisorId    String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  department    Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  advisor       User?          @relation("ClassAdvisor", fields: [advisorId], references: [id], onDelete: SetNull)
+  students      User[]         @relation("ClassMembers")
+  announcements Announcement[]
+  materials     Material[]
+  events        Event[]
+  posts         Post[]
+  conversations Conversation[] @relation("ClassConversations")
+
+  @@map("class_sections")
+}
+
+model Announcement {
+  id           String            @id @default(cuid())
+  title        String
+  content      String
+  scope        AnnouncementScope @default(COLLEGE)
+  attachments  String[]          @default([])
+  publishedAt  DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  authorId     String
+  departmentId String?
+  classId      String?
+
+  author       User          @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  department   Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  classSection ClassSection? @relation(fields: [classId], references: [id], onDelete: SetNull)
+
+  @@map("announcements")
+}
+
+model Material {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  fileUrl     String
+  previewUrl  String?
+  type        MaterialType @default(NOTE)
+  subject     String?
+  semester    String?
+  tags        String[]     @default([])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  createdById  String
+  departmentId String?
+  classId      String?
+
+  createdBy    User              @relation("MaterialCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  department   Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  classSection ClassSection?     @relation(fields: [classId], references: [id], onDelete: SetNull)
+  comments     MaterialComment[]
+
+  @@map("materials")
+}
+
+model MaterialComment {
+  id         String   @id @default(cuid())
+  text       String
+  createdAt  DateTime @default(now())
+  authorId   String
+  materialId String
+
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@map("material_comments")
+}
+
+model Achievement {
+  id             String            @id @default(cuid())
+  title          String
+  description    String?
+  mediaUrl       String?
+  certificateUrl String?
+  tags           String[]          @default([])
+  status         AchievementStatus @default(PENDING)
+  submittedAt    DateTime          @default(now())
+  verifiedAt     DateTime?
+  userId         String
+  verifiedById   String?
+  departmentId   String?
+
+  student    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verifier   User?       @relation("AchievementVerifier", fields: [verifiedById], references: [id], onDelete: SetNull)
+  department Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
+  @@map("achievements")
+}
+
+model Event {
+  id                   String    @id @default(cuid())
+  title                String
+  description          String?
+  eventType            EventType @default(OTHER)
+  startAt              DateTime
+  endAt                DateTime
+  location             String?
+  coverImage           String?
+  capacity             Int?
+  registrationDeadline DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  createdById          String
+  departmentId         String?
+  classId              String?
+  clubId               String?
+
+  createdBy     User                @relation("EventCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  department    Department?         @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  classSection  ClassSection?       @relation(fields: [classId], references: [id], onDelete: SetNull)
+  club          Club?               @relation(fields: [clubId], references: [id], onDelete: SetNull)
+  registrations EventRegistration[]
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id           String             @id @default(cuid())
+  status       RegistrationStatus @default(PENDING)
+  registeredAt DateTime           @default(now())
+  eventId      String
+  userId       String
+
+  event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  attendee User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@map("event_registrations")
+}
+
+model Club {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  category     String?
+  logo         String?
+  banner       String?
+  status       String?  @default("ACTIVE")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  founderId    String
+  departmentId String?
+
+  founder       User           @relation("ClubFounder", fields: [founderId], references: [id], onDelete: Cascade)
+  department    Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  members       ClubMember[]
+  events        Event[]
+  conversations Conversation[] @relation("ClubConversations")
+
+  @@map("clubs")
+}
+
+model ClubMember {
+  id       String   @id @default(cuid())
+  role     ClubRole @default(MEMBER)
+  status   String?  @default("ACTIVE")
+  joinedAt DateTime @default(now())
+  clubId   String
+  userId   String
+
+  club   Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  member User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@map("club_members")
 }
